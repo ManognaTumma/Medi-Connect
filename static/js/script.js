@@ -6,6 +6,8 @@
 document.addEventListener('DOMContentLoaded', function () {
   initMobileMenu();
   initAlertAutoDismiss();
+  initIndianPhoneInputs();
+  initEditDoctorModal();
   initFormValidations();
   initQuickFillButtons();
   initDynamicSlotLoader();
@@ -62,22 +64,24 @@ function initAlertAutoDismiss() {
    3. Form Validation (Client-Side)
    ======================================================= */
 function initFormValidations() {
-  // Patient Registration Form
+  // Registration Form (Patient and Doctor)
   const regForm = document.getElementById('registrationForm');
   if (regForm) {
     regForm.addEventListener('submit', function (e) {
       let isValid = true;
       clearFormErrors(regForm);
 
+      const roleInput = regForm.querySelector('#roleInput');
+      const isDoctor = roleInput && roleInput.value === 'doctor';
+
       const fullName = regForm.querySelector('#full_name');
       const email = regForm.querySelector('#email');
       const phone = regForm.querySelector('#phone');
       const pwd = regForm.querySelector('#password');
       const confirmPwd = regForm.querySelector('#confirm_password');
-      const dob = regForm.querySelector('#date_of_birth');
 
       if (!fullName.value.trim() || fullName.value.trim().length < 2) {
-        showFieldError(fullName, 'Please enter your full name (minimum 2 characters).');
+        showFieldError(fullName, 'Please enter your full legal name (minimum 2 characters).');
         isValid = false;
       }
 
@@ -86,17 +90,40 @@ function initFormValidations() {
         isValid = false;
       }
 
-      if (phone && phone.value.trim() && !validatePhone(phone.value.trim())) {
-        showFieldError(phone, 'Please enter a valid phone number format.');
-        isValid = false;
-      }
-
-      if (dob && dob.value) {
-        const birthDate = new Date(dob.value);
-        const today = new Date();
-        if (birthDate >= today) {
-          showFieldError(dob, 'Date of birth must be in the past.');
+      if (isDoctor) {
+        // Validate Indian mobile phone (+91)
+        const phoneRes = validateIndianPhone(phone ? phone.value : '');
+        if (!phoneRes.valid) {
+          showFieldError(phone, phoneRes.message);
           isValid = false;
+        }
+
+        const specSelect = regForm.querySelector('#specialization_id');
+        if (!specSelect || !specSelect.value) {
+          showFieldError(specSelect, 'Please select your medical specialization.');
+          isValid = false;
+        }
+
+        const qual = regForm.querySelector('#qualification');
+        if (!qual || !qual.value.trim()) {
+          showFieldError(qual, 'Please provide your medical qualifications.');
+          isValid = false;
+        }
+      } else {
+        // Patient phone
+        if (phone && phone.value.trim() && !validatePhone(phone.value.trim())) {
+          showFieldError(phone, 'Please enter a valid phone number format.');
+          isValid = false;
+        }
+
+        const dob = regForm.querySelector('#date_of_birth');
+        if (dob && dob.value) {
+          const birthDate = new Date(dob.value);
+          const today = new Date();
+          if (birthDate >= today) {
+            showFieldError(dob, 'Date of birth must be in the past.');
+            isValid = false;
+          }
         }
       }
 
@@ -116,14 +143,150 @@ function initFormValidations() {
     });
   }
 
+  // Admin Add Doctor Form (Register New Doctor Modal)
+  const addDocForm = document.getElementById('adminAddDoctorForm');
+  if (addDocForm) {
+    addDocForm.addEventListener('submit', function (e) {
+      let isValid = true;
+      clearFormErrors(addDocForm);
+
+      const fullName = addDocForm.querySelector('input[name="full_name"]');
+      const email = addDocForm.querySelector('input[name="email"]');
+      const phone = addDocForm.querySelector('#adminDocPhone');
+      const specSelect = addDocForm.querySelector('select[name="specialization_id"]');
+      const qual = addDocForm.querySelector('input[name="qualification"]');
+
+      if (!fullName || !fullName.value.trim() || fullName.value.trim().length < 2) {
+        showFieldError(fullName, 'Please enter doctor full name (min 2 characters).');
+        isValid = false;
+      }
+
+      if (!email || !validateEmail(email.value.trim())) {
+        showFieldError(email, 'Please enter a valid email address.');
+        isValid = false;
+      }
+
+      const phoneRes = validateIndianPhone(phone ? phone.value : '');
+      if (!phoneRes.valid) {
+        showFieldError(phone, phoneRes.message);
+        isValid = false;
+      }
+
+      if (!specSelect || !specSelect.value) {
+        showFieldError(specSelect, 'Please select a specialization.');
+        isValid = false;
+      }
+
+      if (!qual || !qual.value.trim()) {
+        showFieldError(qual, 'Please provide doctor qualifications.');
+        isValid = false;
+      }
+
+      if (!isValid) {
+        e.preventDefault();
+      }
+    });
+  }
+
+  // Admin Edit Doctor Form
+  const editDocForm = document.getElementById('adminEditDoctorForm');
+  if (editDocForm) {
+    editDocForm.addEventListener('submit', function (e) {
+      let isValid = true;
+      clearFormErrors(editDocForm);
+
+      const fullName = editDocForm.querySelector('#editDocName');
+      const phone = editDocForm.querySelector('#editDocPhone');
+      const specSelect = editDocForm.querySelector('#editDocSpec');
+      const qual = editDocForm.querySelector('#editDocQual');
+
+      if (!fullName || !fullName.value.trim() || fullName.value.trim().length < 2) {
+        showFieldError(fullName, 'Please enter doctor full name.');
+        isValid = false;
+      }
+
+      if (phone && phone.value.trim()) {
+        const phoneRes = validateIndianPhone(phone.value);
+        if (!phoneRes.valid) {
+          showFieldError(phone, phoneRes.message);
+          isValid = false;
+        }
+      }
+
+      if (!specSelect || !specSelect.value) {
+        showFieldError(specSelect, 'Please select a specialization.');
+        isValid = false;
+      }
+
+      if (!qual || !qual.value.trim()) {
+        showFieldError(qual, 'Please provide doctor qualifications.');
+        isValid = false;
+      }
+
+      if (!isValid) {
+        e.preventDefault();
+      }
+    });
+  }
+
+  // User Profile Form
+  const profileForm = document.getElementById('profileForm');
+  if (profileForm) {
+    profileForm.addEventListener('submit', function (e) {
+      let isValid = true;
+      clearFormErrors(profileForm);
+
+      const fullName = profileForm.querySelector('#full_name');
+      const phone = profileForm.querySelector('#phone');
+
+      if (!fullName || !fullName.value.trim()) {
+        showFieldError(fullName, 'Full name cannot be blank.');
+        isValid = false;
+      }
+
+      if (phone && phone.classList.contains('indian-phone-field')) {
+        const phoneRes = validateIndianPhone(phone.value);
+        if (!phoneRes.valid) {
+          showFieldError(phone, phoneRes.message);
+          isValid = false;
+        }
+      }
+
+      if (!isValid) {
+        e.preventDefault();
+      }
+    });
+  }
+
   // Appointment Booking Form
   const bookingForm = document.getElementById('appointmentBookingForm');
   if (bookingForm) {
+    const docSelect = bookingForm.querySelector('#doctor_id');
+    const specDetails = document.getElementById('selectedDocSpecDetails');
+    const specName = document.getElementById('selectedDocSpecName');
+    const specDesc = document.getElementById('selectedDocSpecDesc');
+
+    function updateDocSpecialtyDisplay() {
+      if (!docSelect || !specDetails) return;
+      const opt = docSelect.options[docSelect.selectedIndex];
+      if (opt && opt.getAttribute('data-spec')) {
+        specName.innerText = opt.getAttribute('data-spec');
+        specDesc.innerText = opt.getAttribute('data-desc') || 'Medical specialist consultation.';
+        specDetails.style.display = 'block';
+      } else {
+        specDetails.style.display = 'none';
+      }
+    }
+
+    if (docSelect) {
+      docSelect.addEventListener('change', updateDocSpecialtyDisplay);
+      updateDocSpecialtyDisplay();
+    }
+
     bookingForm.addEventListener('submit', function (e) {
       let isValid = true;
       clearFormErrors(bookingForm);
 
-      const docSelect = bookingForm.querySelector('#doctor_id');
       const aptDate = bookingForm.querySelector('#appointment_date');
       const aptTime = bookingForm.querySelector('#appointment_time');
       const reason = bookingForm.querySelector('#reason');
@@ -213,19 +376,25 @@ function initFormValidations() {
 function showFieldError(inputElement, message) {
   if (!inputElement) return;
   inputElement.classList.add('is-invalid');
-  const parent = inputElement.parentElement;
-  let feedback = parent.querySelector('.invalid-feedback');
+  let container = inputElement.parentElement;
+  if (container.classList.contains('phone-input-group')) {
+    container = container.parentElement;
+  }
+  let feedback = container.querySelector('.invalid-feedback');
   if (!feedback) {
     feedback = document.createElement('div');
     feedback.className = 'invalid-feedback';
-    parent.appendChild(feedback);
+    container.appendChild(feedback);
   }
   feedback.innerText = message;
+  feedback.style.display = 'block';
 }
 
 function clearFormErrors(form) {
   form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-  form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+  form.querySelectorAll('.invalid-feedback').forEach(el => {
+    if (!el.classList.contains('slot-error')) el.remove();
+  });
 }
 
 function validateEmail(email) {
@@ -234,6 +403,111 @@ function validateEmail(email) {
 
 function validatePhone(phone) {
   return /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/.test(phone);
+}
+
+function validateIndianPhone(phoneVal) {
+  if (!phoneVal || !phoneVal.trim()) {
+    return { valid: false, message: 'Mobile phone number is required.' };
+  }
+  const raw = phoneVal.trim();
+  if (/[a-zA-Z]/.test(raw)) {
+    return { valid: false, message: 'Phone number cannot contain letters.' };
+  }
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('91') && digits.length === 12) {
+    digits = digits.slice(2);
+  } else if (digits.startsWith('0') && digits.length === 11) {
+    digits = digits.slice(1);
+  }
+  if (digits.length < 10) {
+    return { valid: false, message: `Phone number is too short (${digits.length} digits). A valid Indian mobile number requires 10 digits.` };
+  }
+  if (digits.length > 10) {
+    return { valid: false, message: `Phone number is too long (${digits.length} digits). A valid Indian mobile number requires 10 digits.` };
+  }
+  if (!['6', '7', '8', '9'].includes(digits.charAt(0))) {
+    return { valid: false, message: 'Invalid Indian mobile number. Mobile numbers in India must start with 6, 7, 8, or 9.' };
+  }
+  return { valid: true, digits: digits, formatted: `+91 ${digits}` };
+}
+
+function initIndianPhoneInputs() {
+  document.querySelectorAll('.indian-phone-field').forEach(input => {
+    input.addEventListener('input', function () {
+      let val = this.value;
+      val = val.replace(/[^\d\s\-\+\(\)]/g, '');
+      let digits = val.replace(/\D/g, '');
+      if (digits.startsWith('91') && digits.length > 10) {
+        digits = digits.slice(2);
+      } else if (digits.startsWith('0') && digits.length > 10) {
+        digits = digits.slice(1);
+      }
+      if (digits.length > 10) {
+        digits = digits.slice(0, 10);
+      }
+      this.value = digits;
+
+      const group = this.closest('.form-group');
+      if (group) {
+        const errorEl = group.querySelector('.phone-error-msg');
+        if (digits.length > 0 && !['6', '7', '8', '9'].includes(digits.charAt(0))) {
+          if (errorEl) {
+            errorEl.innerText = 'Indian mobile numbers must start with 6, 7, 8, or 9.';
+            errorEl.style.display = 'block';
+          }
+          this.classList.add('is-invalid');
+        } else {
+          if (errorEl) {
+            errorEl.innerText = '';
+            errorEl.style.display = 'none';
+          }
+          this.classList.remove('is-invalid');
+        }
+      }
+    });
+
+    input.addEventListener('paste', function () {
+      setTimeout(() => {
+        let digits = this.value.replace(/\D/g, '');
+        if (digits.startsWith('91') && digits.length > 10) {
+          digits = digits.slice(2);
+        } else if (digits.startsWith('0') && digits.length > 10) {
+          digits = digits.slice(1);
+        }
+        this.value = digits.slice(0, 10);
+      }, 10);
+    });
+  });
+}
+
+function initEditDoctorModal() {
+  document.querySelectorAll('.edit-doc-trigger').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const form = document.getElementById('adminEditDoctorForm');
+      if (!form) return;
+      const actionUrl = this.getAttribute('data-action-url');
+      if (actionUrl) form.setAttribute('action', actionUrl);
+
+      const nameInput = document.getElementById('editDocName');
+      const phoneInput = document.getElementById('editDocPhone');
+      const specSelect = document.getElementById('editDocSpec');
+      const qualInput = document.getElementById('editDocQual');
+      const expInput = document.getElementById('editDocExp');
+      const feeInput = document.getElementById('editDocFee');
+      const bioInput = document.getElementById('editDocBio');
+
+      if (nameInput) nameInput.value = this.getAttribute('data-doc-name') || '';
+      let rawPhone = this.getAttribute('data-doc-phone') || '';
+      let digits = rawPhone.replace(/\D/g, '');
+      if (digits.startsWith('91') && digits.length > 10) digits = digits.slice(2);
+      if (phoneInput) phoneInput.value = digits;
+      if (specSelect) specSelect.value = this.getAttribute('data-doc-spec') || '';
+      if (qualInput) qualInput.value = this.getAttribute('data-doc-qual') || '';
+      if (expInput) expInput.value = this.getAttribute('data-doc-exp') || '0';
+      if (feeInput) feeInput.value = this.getAttribute('data-doc-fee') || '50.00';
+      if (bioInput) bioInput.value = this.getAttribute('data-doc-bio') || '';
+    });
+  });
 }
 
 /* =======================================================
@@ -374,9 +648,10 @@ function initDoctorDirectoryFilter() {
     docCards.forEach(card => {
       const name = card.getAttribute('data-name') || '';
       const spec = card.getAttribute('data-spec') || '';
+      const desc = card.getAttribute('data-desc') || '';
       const qual = card.getAttribute('data-qual') || '';
 
-      if (name.includes(val) || spec.includes(val) || qual.includes(val)) {
+      if (name.includes(val) || spec.includes(val) || desc.includes(val) || qual.includes(val)) {
         card.style.display = 'flex';
       } else {
         card.style.display = 'none';

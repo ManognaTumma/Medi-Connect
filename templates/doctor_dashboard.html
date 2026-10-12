@@ -11,6 +11,11 @@
       <p class="dashboard-subtitle">
         Dr. {{ doctor.full_name or current_user.name }} &bull; {{ doctor.specialization_name or 'Specialist' }} &bull; ${{ "%.2f"|format(doctor.consultation_fee or 50) }} fee
       </p>
+      {% if doctor.specialization_description %}
+        <p style="font-size:0.85rem;color:var(--slate-500);margin-top:0.25rem;">
+          Specialty Scope: <em>{{ doctor.specialization_description }}</em>
+        </p>
+      {% endif %}
     </div>
     <div style="display:flex;gap:0.75rem;">
       <button type="button" class="btn btn-primary" data-modal-target="#addAvailabilityModal" id="openAddAvailabilityBtn">

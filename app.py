@@ -89,6 +89,56 @@ def is_valid_email(email):
     pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     return re.match(pattern, email) is not None
 
+def validate_and_normalize_indian_phone(phone_input):
+    """
+    Validates and normalizes an Indian phone number.
+    Returns: (is_valid: bool, normalized_phone: str, error_message: str)
+    
+    Accepts 10-digit Indian mobile numbers with optional country code (+91, 91, 0).
+    Valid Indian mobile numbers must start with 6, 7, 8, or 9.
+    Returns standardized format: '+91 9876543210' without any duplicate country code.
+    """
+    if not phone_input or not str(phone_input).strip():
+        return False, "", "Phone number is required."
+    
+    raw = str(phone_input).strip()
+    
+    # Disallow alphabetic letters
+    if re.search(r'[a-zA-Z]', raw):
+        return False, "", "Phone number cannot contain letters or alphabetic characters."
+    
+    # Remove whitespace, hyphens, parentheses, dots
+    cleaned = re.sub(r'[\s\-\(\)\.]', '', raw)
+    
+    # Strip redundant / multiple country codes (+91, 0091) safely
+    while cleaned.startswith('+91') or cleaned.startswith('0091'):
+        if cleaned.startswith('+91'):
+            cleaned = cleaned[3:]
+        elif cleaned.startswith('0091'):
+            cleaned = cleaned[4:]
+            
+    if cleaned.startswith('91') and len(cleaned) == 12:
+        cleaned = cleaned[2:]
+    elif cleaned.startswith('0') and len(cleaned) == 11:
+        cleaned = cleaned[1:]
+        
+    if '+' in cleaned:
+        return False, "", "Invalid country code format. Only Indian mobile numbers (+91) are accepted."
+        
+    if not cleaned.isdigit():
+        return False, "", "Phone number contains invalid characters. Only digits are allowed."
+        
+    if len(cleaned) < 10:
+        return False, "", f"Phone number is too short ({len(cleaned)} digits). A valid Indian mobile number requires exactly 10 digits."
+    if len(cleaned) > 10:
+        return False, "", f"Phone number is too long ({len(cleaned)} digits). A valid Indian mobile number requires exactly 10 digits."
+        
+    if cleaned[0] not in ('6', '7', '8', '9'):
+        return False, "", f"Invalid Indian mobile number '{cleaned}'. Indian mobile numbers must start with 6, 7, 8, or 9."
+        
+    normalized = f"+91 {cleaned}"
+    return True, normalized, ""
+
 def generate_slots(start_t, end_t, duration_minutes=30):
     """Generates time slot list strings (HH:MM) between start and end time."""
     slots = []
@@ -119,10 +169,10 @@ def generate_slots(start_t, end_t, duration_minutes=30):
 def index():
     """Home landing page with healthcare services, specialties, and featured doctors."""
     try:
-        specializations = db.query_db("SELECT * FROM specializations ORDER BY specialization_name ASC LIMIT 6")
+        specializations = db.query_db("SELECT * FROM specializations ORDER BY specialization_name ASC")
         featured_doctors = db.query_db("""
             SELECT d.doctor_id, d.qualification, d.experience, d.consultation_fee, d.biography,
-                   u.full_name, s.specialization_name
+                   u.full_name, s.specialization_name, s.description AS specialization_description
             FROM doctors d
             JOIN users u ON d.user_id = u.user_id
             JOIN specializations s ON d.specialization_id = s.specialization_id
@@ -186,16 +236,27 @@ def contact():
 # -------------------------------------------------------------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    """Patient self-registration page."""
+    """Self-registration page for patients and physicians."""
     if 'user_id' in session:
         return redirect(url_for('index'))
 
+    # Load all 15 specializations dynamically from MySQL
+    try:
+        specializations = db.query_db("SELECT * FROM specializations ORDER BY specialization_name ASC")
+    except Exception as e:
+        app.logger.error(f"Error loading specializations for registration: {e}")
+        specializations = []
+
+    req_role = request.args.get('role', 'patient').strip().lower()
+
     if request.method == 'POST':
+        role = request.form.get('role', 'patient').strip().lower()
+        if role not in ['patient', 'doctor']:
+            role = 'patient'
+
         full_name = request.form.get('full_name', '').strip()
         email = request.form.get('email', '').strip().lower()
-        phone = request.form.get('phone', '').strip()
-        dob = request.form.get('date_of_birth', '').strip()
-        gender = request.form.get('gender', 'Other')
+        phone_input = request.form.get('phone', '').strip()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
 
@@ -209,13 +270,59 @@ def register():
             errors.append("Password must be at least 6 characters long.")
         if password != confirm_password:
             errors.append("Passwords do not match.")
-        if gender not in ['Male', 'Female', 'Other']:
-            gender = 'Other'
+
+        normalized_phone = None
+        specialization_id = None
+        qualification = ""
+        experience = 0
+        consultation_fee = 50.0
+        biography = ""
+        dob = ""
+        gender = "Other"
+
+        if role == 'doctor':
+            # Indian mobile number format validation (+91)
+            is_valid_phone, norm_p, phone_err = validate_and_normalize_indian_phone(phone_input)
+            if not is_valid_phone:
+                errors.append(phone_err)
+            else:
+                normalized_phone = norm_p
+
+            specialization_id = request.form.get('specialization_id', type=int)
+            qualification = request.form.get('qualification', '').strip()
+            experience = request.form.get('experience', type=int) or 0
+            consultation_fee = request.form.get('consultation_fee', type=float) or 50.0
+            biography = request.form.get('biography', '').strip()
+
+            if not specialization_id:
+                errors.append("Please select a doctor specialization.")
+            if not qualification:
+                errors.append("Please provide your medical qualification.")
+        else:
+            dob = request.form.get('date_of_birth', '').strip()
+            gender = request.form.get('gender', 'Other')
+            if gender not in ['Male', 'Female', 'Other']:
+                gender = 'Other'
+            normalized_phone = phone_input or None
 
         if errors:
             for err in errors:
                 flash(err, "danger")
-            return render_template('register.html', full_name=full_name, email=email, phone=phone, dob=dob, gender=gender)
+            return render_template(
+                'register.html',
+                specializations=specializations,
+                role=role,
+                full_name=full_name,
+                email=email,
+                phone=phone_input,
+                dob=dob,
+                gender=gender,
+                specialization_id=specialization_id,
+                qualification=qualification,
+                experience=experience,
+                consultation_fee=consultation_fee,
+                biography=biography
+            )
 
         try:
             # Check for existing email
@@ -224,31 +331,62 @@ def register():
                 flash("An account with this email address already exists. Please log in.", "warning")
                 return redirect(url_for('login'))
 
-            # Insert new user
             pwd_hash = generate_password_hash(password)
-            user_id = db.query_db(
-                """INSERT INTO users (full_name, email, phone, date_of_birth, gender, password_hash, role)
-                   VALUES (%s, %s, %s, %s, %s, %s, 'patient')""",
-                (full_name, email, phone or None, dob or None, gender, pwd_hash),
-                commit=True
-            )
 
-            # Automatically log in the user
-            session.clear()
-            session['csrf_token'] = secrets.token_hex(24)
-            session['user_id'] = user_id
-            session['user_name'] = full_name
-            session['user_email'] = email
-            session['user_role'] = 'patient'
+            if role == 'doctor':
+                user_id = db.query_db(
+                    """INSERT INTO users (full_name, email, phone, password_hash, role)
+                       VALUES (%s, %s, %s, %s, 'doctor')""",
+                    (full_name, email, normalized_phone, pwd_hash),
+                    commit=True
+                )
+                doctor_id = db.query_db(
+                    """INSERT INTO doctors (user_id, specialization_id, qualification, experience, consultation_fee, biography, is_active)
+                       VALUES (%s, %s, %s, %s, %s, %s, TRUE)""",
+                    (user_id, specialization_id, qualification, experience, consultation_fee, biography),
+                    commit=True
+                )
 
-            flash(f"Welcome to MediConnect, {full_name}! Your account has been created successfully.", "success")
-            return redirect(url_for('patient_dashboard'))
+                session.clear()
+                session['csrf_token'] = secrets.token_hex(24)
+                session['user_id'] = user_id
+                session['user_name'] = full_name
+                session['user_email'] = email
+                session['user_role'] = 'doctor'
+                session['doctor_id'] = doctor_id
+
+                flash(f"Welcome, Dr. {full_name}! Your physician profile has been registered successfully.", "success")
+                return redirect(url_for('doctor_dashboard'))
+            else:
+                user_id = db.query_db(
+                    """INSERT INTO users (full_name, email, phone, date_of_birth, gender, password_hash, role)
+                       VALUES (%s, %s, %s, %s, %s, %s, 'patient')""",
+                    (full_name, email, normalized_phone, dob or None, gender, pwd_hash),
+                    commit=True
+                )
+
+                session.clear()
+                session['csrf_token'] = secrets.token_hex(24)
+                session['user_id'] = user_id
+                session['user_name'] = full_name
+                session['user_email'] = email
+                session['user_role'] = 'patient'
+
+                flash(f"Welcome to MediConnect, {full_name}! Your account has been created successfully.", "success")
+                return redirect(url_for('patient_dashboard'))
 
         except Exception as e:
             app.logger.error(f"Registration error: {e}")
             flash("Could not complete registration due to a database error. Please try again.", "danger")
 
-    return render_template('register.html')
+    return render_template('register.html', specializations=specializations, role=req_role)
+
+@app.route('/doctor/register', methods=['GET', 'POST'])
+def doctor_register():
+    """Direct route for doctor registration."""
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    return redirect(url_for('register', role='doctor'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -332,7 +470,7 @@ def doctors():
     sql = """
         SELECT d.doctor_id, d.qualification, d.experience, d.consultation_fee, d.biography, d.is_active,
                u.full_name, u.email, u.phone,
-               s.specialization_id, s.specialization_name
+               s.specialization_id, s.specialization_name, s.description AS specialization_description
         FROM doctors d
         JOIN users u ON d.user_id = u.user_id
         JOIN specializations s ON d.specialization_id = s.specialization_id
@@ -341,8 +479,8 @@ def doctors():
     params = []
 
     if search_query:
-        sql += " AND (u.full_name LIKE %s OR d.qualification LIKE %s)"
-        params.extend([f"%{search_query}%", f"%{search_query}%"])
+        sql += " AND (u.full_name LIKE %s OR d.qualification LIKE %s OR s.specialization_name LIKE %s OR s.description LIKE %s)"
+        params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
 
     if specialization_filter:
         sql += " AND s.specialization_id = %s"
@@ -353,10 +491,12 @@ def doctors():
     try:
         doctor_list = db.query_db(sql, params)
         specializations = db.query_db("SELECT * FROM specializations ORDER BY specialization_name ASC")
+        selected_spec_obj = next((s for s in specializations if str(s['specialization_id']) == str(specialization_filter)), None)
     except Exception as e:
         app.logger.error(f"Doctor listing error: {e}")
         doctor_list = []
         specializations = []
+        selected_spec_obj = None
         flash("Could not load doctor list from database.", "danger")
 
     return render_template(
@@ -364,7 +504,8 @@ def doctors():
         doctors=doctor_list,
         specializations=specializations,
         search_query=search_query,
-        selected_spec=specialization_filter
+        selected_spec=specialization_filter,
+        selected_spec_obj=selected_spec_obj
     )
 
 # -------------------------------------------------------------
@@ -550,7 +691,7 @@ def book_appointment():
     try:
         doctor_list = db.query_db("""
             SELECT d.doctor_id, d.consultation_fee, d.qualification,
-                   u.full_name, s.specialization_name
+                   u.full_name, s.specialization_name, s.description AS specialization_description
             FROM doctors d
             JOIN users u ON d.user_id = u.user_id
             JOIN specializations s ON d.specialization_id = s.specialization_id
@@ -677,7 +818,7 @@ def doctor_dashboard():
 
     try:
         doctor_info = db.query_db("""
-            SELECT d.*, u.full_name, u.email, u.phone, s.specialization_name
+            SELECT d.*, u.full_name, u.email, u.phone, s.specialization_name, s.description AS specialization_description
             FROM doctors d
             JOIN users u ON d.user_id = u.user_id
             JOIN specializations s ON d.specialization_id = s.specialization_id
@@ -832,7 +973,7 @@ def admin_dashboard():
         doctors = db.query_db("""
             SELECT d.doctor_id, d.user_id, d.qualification, d.experience, d.consultation_fee, d.biography, d.is_active,
                    u.full_name, u.email, u.phone,
-                   s.specialization_id, s.specialization_name
+                   s.specialization_id, s.specialization_name, s.description AS specialization_description
             FROM doctors d
             JOIN users u ON d.user_id = u.user_id
             JOIN specializations s ON d.specialization_id = s.specialization_id
@@ -927,6 +1068,12 @@ def admin_add_doctor():
         flash("Full name, email, specialization, and qualification are required.", "danger")
         return redirect(url_for('admin_dashboard'))
 
+    # Validate and normalize Indian mobile phone number (+91)
+    is_valid_phone, normalized_phone, phone_err = validate_and_normalize_indian_phone(phone)
+    if not is_valid_phone:
+        flash(phone_err, "danger")
+        return redirect(url_for('admin_dashboard'))
+
     try:
         # Check if email exists
         if db.query_db("SELECT user_id FROM users WHERE email = %s", (email,), one=True):
@@ -938,7 +1085,7 @@ def admin_add_doctor():
         user_id = db.query_db(
             """INSERT INTO users (full_name, email, phone, password_hash, role)
                VALUES (%s, %s, %s, %s, 'doctor')""",
-            (full_name, email, phone or None, pwd_hash),
+            (full_name, email, normalized_phone, pwd_hash),
             commit=True
         )
 
@@ -950,7 +1097,7 @@ def admin_add_doctor():
             commit=True
         )
 
-        flash(f"Doctor {full_name} added successfully! (Default Password: {password})", "success")
+        flash(f"Doctor {full_name} registered successfully with phone {normalized_phone}! (Default Password: {password})", "success")
     except Exception as e:
         app.logger.error(f"Error adding doctor: {e}")
         flash("Database error while adding doctor.", "danger")
@@ -969,6 +1116,14 @@ def admin_edit_doctor(doctor_id):
     consultation_fee = request.form.get('consultation_fee', type=float) or 50.0
     biography = request.form.get('biography', '').strip()
 
+    normalized_phone = None
+    if phone:
+        is_valid_phone, norm_p, phone_err = validate_and_normalize_indian_phone(phone)
+        if not is_valid_phone:
+            flash(phone_err, "danger")
+            return redirect(url_for('admin_dashboard'))
+        normalized_phone = norm_p
+
     try:
         doc = db.query_db("SELECT user_id FROM doctors WHERE doctor_id = %s", (doctor_id,), one=True)
         if not doc:
@@ -978,7 +1133,7 @@ def admin_edit_doctor(doctor_id):
         # Update users table
         db.query_db(
             "UPDATE users SET full_name = %s, phone = %s WHERE user_id = %s",
-            (full_name, phone or None, doc['user_id']),
+            (full_name, normalized_phone, doc['user_id']),
             commit=True
         )
 
@@ -1167,9 +1322,11 @@ def profile():
     """Profile viewing and editing for all authenticated users."""
     user_id = session.get('user_id')
 
+    user_role = session.get('user_role')
+
     if request.method == 'POST':
         full_name = request.form.get('full_name', '').strip()
-        phone = request.form.get('phone', '').strip()
+        phone_input = request.form.get('phone', '').strip()
         dob = request.form.get('date_of_birth', '').strip()
         gender = request.form.get('gender', 'Other')
         new_password = request.form.get('new_password', '')
@@ -1178,6 +1335,14 @@ def profile():
         if not full_name:
             flash("Full name cannot be blank.", "danger")
             return redirect(url_for('profile'))
+
+        normalized_phone = phone_input or None
+        if user_role == 'doctor':
+            is_valid_phone, norm_p, phone_err = validate_and_normalize_indian_phone(phone_input)
+            if not is_valid_phone:
+                flash(phone_err, "danger")
+                return redirect(url_for('profile'))
+            normalized_phone = norm_p
 
         if new_password:
             if len(new_password) < 6:
@@ -1194,7 +1359,7 @@ def profile():
                     """UPDATE users
                        SET full_name = %s, phone = %s, date_of_birth = %s, gender = %s, password_hash = %s
                        WHERE user_id = %s""",
-                    (full_name, phone or None, dob or None, gender, pwd_hash, user_id),
+                    (full_name, normalized_phone, dob or None, gender, pwd_hash, user_id),
                     commit=True
                 )
             else:
@@ -1202,9 +1367,26 @@ def profile():
                     """UPDATE users
                        SET full_name = %s, phone = %s, date_of_birth = %s, gender = %s
                        WHERE user_id = %s""",
-                    (full_name, phone or None, dob or None, gender, user_id),
+                    (full_name, normalized_phone, dob or None, gender, user_id),
                     commit=True
                 )
+
+            # If user is a doctor, update professional details
+            if user_role == 'doctor':
+                specialization_id = request.form.get('specialization_id', type=int)
+                qualification = request.form.get('qualification', '').strip()
+                experience = request.form.get('experience', type=int) or 0
+                consultation_fee = request.form.get('consultation_fee', type=float) or 50.0
+                biography = request.form.get('biography', '').strip()
+
+                if specialization_id and qualification:
+                    db.query_db(
+                        """UPDATE doctors
+                           SET specialization_id = %s, qualification = %s, experience = %s, consultation_fee = %s, biography = %s
+                           WHERE user_id = %s""",
+                        (specialization_id, qualification, experience, consultation_fee, biography, user_id),
+                        commit=True
+                    )
 
             session['user_name'] = full_name
             flash("Profile updated successfully!", "success")
@@ -1216,11 +1398,23 @@ def profile():
 
     try:
         user_data = db.query_db("SELECT * FROM users WHERE user_id = %s", (user_id,), one=True)
+        doctor_data = None
+        specializations = []
+        if user_data and user_data.get('role') == 'doctor':
+            doctor_data = db.query_db("""
+                SELECT d.*, s.specialization_name, s.description AS specialization_description
+                FROM doctors d
+                LEFT JOIN specializations s ON d.specialization_id = s.specialization_id
+                WHERE d.user_id = %s
+            """, (user_id,), one=True)
+            specializations = db.query_db("SELECT * FROM specializations ORDER BY specialization_name ASC")
     except Exception as e:
         app.logger.error(f"Profile load error: {e}")
         user_data = {}
+        doctor_data = None
+        specializations = []
 
-    return render_template('profile.html', user=user_data)
+    return render_template('profile.html', user=user_data, doctor_profile=doctor_data, specializations=specializations)
 
 # -------------------------------------------------------------
 # Error Handlers

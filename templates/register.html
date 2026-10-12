@@ -1,56 +1,137 @@
 {% extends "base.html" %}
 
-{% block title %}Patient Registration - MediConnect{% endblock %}
+{% block title %}{{ 'Physician Registration' if role == 'doctor' else 'Patient Registration' }} - MediConnect{% endblock %}
 
 {% block content %}
 <div class="container container-narrow">
   <div class="form-card">
     <div class="form-header">
       <div class="brand-icon" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-          <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-        </svg>
+        {% if role == 'doctor' %}
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/>
+          </svg>
+        {% else %}
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        {% endif %}
       </div>
-      <h1 class="form-title">Create Patient Account</h1>
-      <p class="form-subtitle">Register to book and manage medical appointments online</p>
+      <h1 class="form-title">{{ 'Join as a Medical Physician' if role == 'doctor' else 'Create Patient Account' }}</h1>
+      <p class="form-subtitle">
+        {{ 'Register your clinical credentials to consult patients on MediConnect' if role == 'doctor' else 'Register to book and manage medical appointments online' }}
+      </p>
+
+      <!-- Role Switcher -->
+      <div style="display: flex; justify-content: center; margin-top: 1.25rem; gap: 0.5rem;">
+        <a href="{{ url_for('register', role='patient') }}" 
+           class="btn btn-sm {{ 'btn-primary' if role != 'doctor' else 'btn-outline' }}" 
+           style="border-radius: var(--radius-full); padding: 0.4rem 1.25rem;">
+          👤 Patient Registration
+        </a>
+        <a href="{{ url_for('register', role='doctor') }}" 
+           class="btn btn-sm {{ 'btn-primary' if role == 'doctor' else 'btn-outline' }}" 
+           style="border-radius: var(--radius-full); padding: 0.4rem 1.25rem;">
+          🩺 Doctor Registration
+        </a>
+      </div>
     </div>
 
     <form method="POST" action="{{ url_for('register') }}" id="registrationForm" novalidate>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="role" id="roleInput" value="{{ role or 'patient' }}">
 
       <div class="form-group">
         <label for="full_name" class="form-label">Full Legal Name <span class="required">*</span></label>
-        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name or '' }}" placeholder="e.g. Johnathan Doe" required>
+        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name or '' }}" placeholder="{{ 'e.g. Dr. Jane Smith' if role == 'doctor' else 'e.g. Johnathan Doe' }}" required>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="email" class="form-label">Email Address <span class="required">*</span></label>
-          <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" placeholder="patient@example.com" required>
-          <span class="form-helper">Used for booking confirmations and logins.</span>
+          <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" placeholder="{{ 'doctor@carepoint.com' if role == 'doctor' else 'patient@example.com' }}" required>
+          <span class="form-helper">Used for account login and notifications.</span>
         </div>
 
         <div class="form-group">
-          <label for="phone" class="form-label">Phone Number</label>
-          <input type="tel" class="form-control" id="phone" name="phone" value="{{ phone or '' }}" placeholder="+1 (555) 000-0000">
+          <label for="phone" class="form-label">Mobile Phone Number {% if role == 'doctor' %}<span class="required">*</span>{% endif %}</label>
+          {% if role == 'doctor' %}
+            <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
+              <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
+                +91
+              </span>
+              <input type="tel" 
+                     class="form-control indian-phone-field" 
+                     id="phone" 
+                     name="phone" 
+                     value="{{ phone or '' }}" 
+                     placeholder="9876543210" 
+                     maxlength="15" 
+                     style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;" 
+                     required>
+            </div>
+            <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
+              Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+            </span>
+          {% else %}
+            <input type="tel" class="form-control" id="phone" name="phone" value="{{ phone or '' }}" placeholder="+1 (555) 000-0000">
+          {% endif %}
         </div>
       </div>
 
-      <div class="form-row">
+      {% if role == 'doctor' %}
+        <!-- Doctor Professional Fields -->
         <div class="form-group">
-          <label for="date_of_birth" class="form-label">Date of Birth</label>
-          <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ dob or '' }}">
-        </div>
-
-        <div class="form-group">
-          <label for="gender" class="form-label">Gender</label>
-          <select class="form-control" id="gender" name="gender">
-            <option value="Male" {% if gender == 'Male' %}selected{% endif %}>Male</option>
-            <option value="Female" {% if gender == 'Female' %}selected{% endif %}>Female</option>
-            <option value="Other" {% if gender == 'Other' or not gender %}selected{% endif %}>Other / Prefer not to say</option>
+          <label for="specialization_id" class="form-label">Medical Specialization <span class="required">*</span></label>
+          <select class="form-control" id="specialization_id" name="specialization_id" required>
+            <option value="">-- Choose Your Clinical Specialty (15 Specializations) --</option>
+            {% for spec in specializations %}
+              <option value="{{ spec.specialization_id }}" {% if specialization_id|string == spec.specialization_id|string %}selected{% endif %}>
+                {{ spec.specialization_name }} — {{ spec.description }}
+              </option>
+            {% endfor %}
           </select>
         </div>
-      </div>
+
+        <div class="form-group">
+          <label for="qualification" class="form-label">Medical Qualifications <span class="required">*</span></label>
+          <input type="text" class="form-control" id="qualification" name="qualification" value="{{ qualification or '' }}" placeholder="e.g. MBBS, MD, DM, FACC" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="experience" class="form-label">Clinical Experience (Years)</label>
+            <input type="number" class="form-control" id="experience" name="experience" value="{{ experience or 5 }}" min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="consultation_fee" class="form-label">Consultation Fee ($)</label>
+            <input type="number" step="0.01" class="form-control" id="consultation_fee" name="consultation_fee" value="{{ consultation_fee or 75.00 }}" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="biography" class="form-label">Professional Biography & Focus</label>
+          <textarea class="form-control" id="biography" name="biography" rows="3" placeholder="Describe your clinical training, areas of interest, and patient care philosophy...">{{ biography or '' }}</textarea>
+        </div>
+      {% else %}
+        <!-- Patient Specific Fields -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="date_of_birth" class="form-label">Date of Birth</label>
+            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ dob or '' }}">
+          </div>
+
+          <div class="form-group">
+            <label for="gender" class="form-label">Gender</label>
+            <select class="form-control" id="gender" name="gender">
+              <option value="Male" {% if gender == 'Male' %}selected{% endif %}>Male</option>
+              <option value="Female" {% if gender == 'Female' %}selected{% endif %}>Female</option>
+              <option value="Other" {% if gender == 'Other' or not gender %}selected{% endif %}>Other / Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+      {% endif %}
 
       <div class="form-row">
         <div class="form-group">
@@ -67,7 +148,7 @@
 
       <div style="margin-top: 1.5rem;">
         <button type="submit" class="btn btn-primary btn-lg btn-full" id="registerSubmitBtn">
-          Complete Registration
+          {{ 'Register as Physician' if role == 'doctor' else 'Complete Registration' }}
         </button>
       </div>
 

@@ -26,11 +26,16 @@
           <option value="">-- Choose a Doctor --</option>
           {% for doc in doctors %}
             <option value="{{ doc.doctor_id }}"
+                    data-spec="{{ doc.specialization_name }}"
+                    data-desc="{{ doc.specialization_description or '' }}"
                     {% if selected_doctor_id == doc.doctor_id %}selected{% endif %}>
-              {{ doc.full_name }} — {{ doc.specialization_name }} (${{ "%.2f"|format(doc.consultation_fee) }})
+              {{ doc.full_name }} — {{ doc.specialization_name }}{% if doc.specialization_description %} ({{ doc.specialization_description }}){% endif %} — ${{ "%.2f"|format(doc.consultation_fee) }}
             </option>
           {% endfor %}
         </select>
+        <div id="selectedDocSpecDetails" style="display:none;margin-top:0.5rem;padding:0.6rem 0.85rem;background:rgba(37, 99, 235, 0.06);border-left:3px solid var(--primary);border-radius:var(--radius-sm);font-size:0.85rem;">
+          <strong id="selectedDocSpecName" style="color:var(--primary);"></strong>: <span id="selectedDocSpecDesc" style="color:var(--slate-600);"></span>
+        </div>
       </div>
 
       <!-- Date Selection -->

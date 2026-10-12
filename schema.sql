@@ -119,15 +119,24 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 -- Sample Patients: Patient@123
 -- =======================================================
 
--- 1. Insert Specializations
+-- 1. Insert Specializations (15 Clinical Specializations)
 INSERT INTO specializations (specialization_id, specialization_name, description) VALUES
-(1, 'Cardiology', 'Expert diagnosis and management of heart, vascular, and circulatory disorders.'),
-(2, 'Neurology', 'Specialized care for brain, spine, peripheral nervous system, and stroke rehabilitation.'),
-(3, 'Pediatrics', 'Comprehensive physical, behavioral, and developmental healthcare for infants, children, and teens.'),
-(4, 'Dermatology', 'Advanced medical, surgical, and cosmetic treatments for skin, hair, and nail conditions.'),
-(5, 'Orthopedics', 'Surgical and non-surgical solutions for bone, joint, ligament, and sports injuries.'),
-(6, 'General Medicine', 'Primary care, diagnostic screening, preventative health exams, and chronic illness management.')
-ON DUPLICATE KEY UPDATE specialization_name = VALUES(specialization_name);
+(1, 'Cardiologist', 'Heart and blood vessel specialist.'),
+(2, 'Neurologist', 'Brain, spine, nerves, and nervous system specialist.'),
+(3, 'Pediatrician', 'Infants, children, and adolescents\' physician.'),
+(4, 'Dermatologist', 'Skin, hair, and nail specialist.'),
+(5, 'Orthopedist (Orthopedic Surgeon)', 'Bones, joints, muscles, and musculoskeletal system specialist.'),
+(6, 'Gynecologist/Obstetrician', 'Women\'s reproductive health and pregnancy specialist.'),
+(7, 'Dentist', 'Teeth and jaw bone specialist.'),
+(8, 'Ophthalmologist', 'Eye and vision specialist.'),
+(9, 'Anesthesiologist', 'Pain management and anesthesia specialist during surgery.'),
+(10, 'Endocrinologist', 'Hormone imbalances, diabetes, and thyroid disease specialist.'),
+(11, 'Gastroenterologist', 'Digestive system and stomach specialist.'),
+(12, 'Hematologist', 'Blood and bone marrow specialist.'),
+(13, 'Oncologist', 'Cancer diagnosis and treatment specialist.'),
+(14, 'Nephrologist', 'Kidney care and kidney disease specialist.'),
+(15, 'Psychiatrist', 'Mental health and emotional disorders specialist.')
+ON DUPLICATE KEY UPDATE specialization_name = VALUES(specialization_name), description = VALUES(description);
 
 -- 2. Insert Users (Admin, Doctors, Patients)
 -- Passwords:

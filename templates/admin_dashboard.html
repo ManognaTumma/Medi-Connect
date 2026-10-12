@@ -163,7 +163,12 @@
                   <div style="font-weight:600;color:var(--dark);">{{ doc.full_name }}</div>
                   <div style="font-size:0.8rem;color:var(--slate-500);">{{ doc.email }} &bull; {{ doc.phone or 'No phone' }}</div>
                 </td>
-                <td><span class="role-tag doctor">{{ doc.specialization_name }}</span></td>
+                <td>
+                  <span class="role-tag doctor" title="{{ doc.specialization_description or '' }}">{{ doc.specialization_name }}</span>
+                  {% if doc.specialization_description %}
+                    <div style="font-size:0.75rem;color:var(--slate-500);margin-top:0.2rem;max-width:200px;line-height:1.2;">{{ doc.specialization_description }}</div>
+                  {% endif %}
+                </td>
                 <td>{{ doc.qualification }} ({{ doc.experience }}y exp)</td>
                 <td><strong>${{ "%.2f"|format(doc.consultation_fee) }}</strong></td>
                 <td>
@@ -174,6 +179,22 @@
                   {% endif %}
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
+                  <!-- Edit Doctor Button -->
+                  <button type="button" 
+                          class="btn btn-sm btn-outline edit-doc-trigger" 
+                          style="height:30px;padding:0.2rem 0.5rem;margin-right:0.25rem;"
+                          data-modal-target="#editDoctorModal"
+                          data-action-url="{{ url_for('admin_edit_doctor', doctor_id=doc.doctor_id) }}"
+                          data-doc-name="{{ doc.full_name }}"
+                          data-doc-phone="{{ doc.phone or '' }}"
+                          data-doc-spec="{{ doc.specialization_id }}"
+                          data-doc-qual="{{ doc.qualification }}"
+                          data-doc-exp="{{ doc.experience }}"
+                          data-doc-fee="{{ doc.consultation_fee }}"
+                          data-doc-bio="{{ doc.biography or '' }}">
+                    Edit
+                  </button>
+
                   <!-- Toggle Active Status -->
                   <form method="POST" action="{{ url_for('admin_toggle_doctor', doctor_id=doc.doctor_id) }}" style="display:inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -319,7 +340,7 @@
       <h3 class="modal-title">Register New Doctor</h3>
       <button type="button" class="modal-close-btn">&times;</button>
     </div>
-    <form method="POST" action="{{ url_for('admin_add_doctor') }}">
+    <form method="POST" action="{{ url_for('admin_add_doctor') }}" id="adminAddDoctorForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="modal-body">
         <div class="form-group">
@@ -333,16 +354,34 @@
             <input type="email" class="form-control" name="email" placeholder="doc@carepoint.com" required>
           </div>
           <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input type="text" class="form-control" name="phone" placeholder="+1 (555) 000-0000">
+            <label class="form-label" for="adminDocPhone">Phone Number <span class="required">*</span></label>
+            <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
+              <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
+                +91
+              </span>
+              <input type="tel" 
+                     class="form-control indian-phone-field" 
+                     id="adminDocPhone" 
+                     name="phone" 
+                     placeholder="9876543210" 
+                     maxlength="15" 
+                     style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;" 
+                     required>
+            </div>
+            <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
+              Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+            </span>
           </div>
         </div>
 
         <div class="form-group">
           <label class="form-label">Clinical Specialty <span class="required">*</span></label>
           <select class="form-control" name="specialization_id" required>
+            <option value="">-- Select Clinical Specialty (15 Specializations) --</option>
             {% for spec in specializations %}
-              <option value="{{ spec.specialization_id }}">{{ spec.specialization_name }}</option>
+              <option value="{{ spec.specialization_id }}">
+                {{ spec.specialization_name }} — {{ spec.description }}
+              </option>
             {% endfor %}
           </select>
         </div>
@@ -377,6 +416,80 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
         <button type="submit" class="btn btn-primary">Create Doctor Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 1B: Edit Doctor Modal -->
+<div class="modal-backdrop" id="editDoctorModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Doctor Profile</h3>
+      <button type="button" class="modal-close-btn">&times;</button>
+    </div>
+    <form method="POST" action="" id="adminEditDoctorForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" class="form-control" id="editDocName" name="full_name" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editDocPhone">Phone Number</label>
+          <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
+            <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
+              +91
+            </span>
+            <input type="tel" 
+                   class="form-control indian-phone-field" 
+                   id="editDocPhone" 
+                   name="phone" 
+                   placeholder="9876543210" 
+                   maxlength="15" 
+                   style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;">
+          </div>
+          <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
+            Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Clinical Specialty <span class="required">*</span></label>
+          <select class="form-control" id="editDocSpec" name="specialization_id" required>
+            {% for spec in specializations %}
+              <option value="{{ spec.specialization_id }}">
+                {{ spec.specialization_name }} — {{ spec.description }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Qualifications <span class="required">*</span></label>
+          <input type="text" class="form-control" id="editDocQual" name="qualification" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Experience (Years)</label>
+            <input type="number" class="form-control" id="editDocExp" name="experience" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consultation Fee ($)</label>
+            <input type="number" step="0.01" class="form-control" id="editDocFee" name="consultation_fee" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Biography & Specialization Notes</label>
+          <textarea class="form-control" id="editDocBio" name="biography" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
