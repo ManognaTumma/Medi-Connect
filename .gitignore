@@ -6,11 +6,13 @@ env/
 env.bak/
 venv.bak/
 
-# MySQL local database server files & data
+# MySQL & SQLite database server files & data
 mysql_data/
 my_local.ini
 *.ibd
 *.sdi
+*.sqlite3
+*.db
 
 # Environment configurations and secrets
 .env
