@@ -42,27 +42,24 @@
 
         <div class="form-group">
           <label for="phone" class="form-label">Phone Number {% if doctor_profile %}<span class="required">*</span>{% endif %}</label>
-          {% if doctor_profile %}
-            <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
-              <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
-                +91
-              </span>
-              <input type="tel" 
-                     class="form-control indian-phone-field" 
-                     id="phone" 
-                     name="phone" 
-                     value="{{ user.phone.replace('+91 ', '').replace('+91', '') if user.phone else '' }}" 
-                     placeholder="9876543210" 
-                     maxlength="15" 
-                     style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;" 
-                     required>
-            </div>
-            <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
-              Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+          <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
+            <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
+              +91
             </span>
-          {% else %}
-            <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}" placeholder="+1 (555) 000-0000">
-          {% endif %}
+            <input type="tel" 
+                   class="form-control indian-phone-field" 
+                   id="phone" 
+                   name="phone" 
+                   value="{{ user.phone.replace('+91 ', '').replace('+91', '') if user.phone else '' }}" 
+                   placeholder="9876543210" 
+                   maxlength="15" 
+                   style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;" 
+                   {% if doctor_profile %}required{% endif %}>
+          </div>
+          <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
+            Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+          </span>
+          <div class="phone-error-msg" style="color:var(--danger);font-size:0.8rem;margin-top:0.25rem;display:none;"></div>
         </div>
       </div>
 
@@ -77,11 +74,29 @@
           <div class="form-group">
             <label for="specialization_id" class="form-label">Medical Specialization <span class="required">*</span></label>
             <select class="form-control" id="specialization_id" name="specialization_id" required>
-              {% for spec in specializations %}
-                <option value="{{ spec.specialization_id }}" {% if doctor_profile.specialization_id == spec.specialization_id %}selected{% endif %}>
-                  {{ spec.specialization_name }} — {{ spec.description }}
-                </option>
-              {% endfor %}
+              {% if specializations %}
+                {% for spec in specializations %}
+                  <option value="{{ spec.specialization_id }}" {% if doctor_profile.specialization_id == spec.specialization_id %}selected{% endif %}>
+                    {{ spec.specialization_name }} — {{ spec.description }}
+                  </option>
+                {% endfor %}
+              {% else %}
+                <option value="1" {% if doctor_profile.specialization_id == 1 %}selected{% endif %}>Cardiologist — Heart and blood vessel specialist.</option>
+                <option value="2" {% if doctor_profile.specialization_id == 2 %}selected{% endif %}>Dermatologist — Skin, hair, and nail specialist.</option>
+                <option value="3" {% if doctor_profile.specialization_id == 3 %}selected{% endif %}>Dentist — Teeth and jaw bone specialist.</option>
+                <option value="4" {% if doctor_profile.specialization_id == 4 %}selected{% endif %}>Gynecologist/Obstetrician — Women's reproductive health and pregnancy specialist.</option>
+                <option value="5" {% if doctor_profile.specialization_id == 5 %}selected{% endif %}>Orthopedist (Orthopedic Surgeon) — Bones, joints, muscles, and musculoskeletal system specialist.</option>
+                <option value="6" {% if doctor_profile.specialization_id == 6 %}selected{% endif %}>Neurologist — Brain, spine, nerves, and nervous system specialist.</option>
+                <option value="7" {% if doctor_profile.specialization_id == 7 %}selected{% endif %}>Pediatrician — Infants, children, and adolescents' physician.</option>
+                <option value="8" {% if doctor_profile.specialization_id == 8 %}selected{% endif %}>Endocrinologist — Hormone imbalances, diabetes, and thyroid disease specialist.</option>
+                <option value="9" {% if doctor_profile.specialization_id == 9 %}selected{% endif %}>Hematologist — Blood and bone marrow specialist.</option>
+                <option value="10" {% if doctor_profile.specialization_id == 10 %}selected{% endif %}>Gastroenterologist — Digestive system and stomach specialist.</option>
+                <option value="11" {% if doctor_profile.specialization_id == 11 %}selected{% endif %}>Oncologist — Cancer diagnosis and treatment specialist.</option>
+                <option value="12" {% if doctor_profile.specialization_id == 12 %}selected{% endif %}>Nephrologist — Kidney care and kidney disease specialist.</option>
+                <option value="13" {% if doctor_profile.specialization_id == 13 %}selected{% endif %}>Ophthalmologist — Eye and vision specialist.</option>
+                <option value="14" {% if doctor_profile.specialization_id == 14 %}selected{% endif %}>Psychiatrist — Mental health and emotional disorders specialist.</option>
+                <option value="15" {% if doctor_profile.specialization_id == 15 %}selected{% endif %}>Anesthesiologist — Pain management and anesthesia specialist during surgery.</option>
+              {% endif %}
             </select>
             {% if doctor_profile.specialization_description %}
               <span class="form-helper" style="display:block;margin-top:0.35rem;color:var(--primary);font-size:0.825rem;">

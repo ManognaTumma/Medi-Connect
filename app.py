@@ -247,6 +247,26 @@ def register():
         app.logger.error(f"Error loading specializations for registration: {e}")
         specializations = []
 
+    if not specializations:
+        # Fallback list guaranteeing all 15 specializations are available
+        specializations = [
+            {'specialization_id': 1, 'specialization_name': 'Cardiologist', 'description': 'Heart and blood vessel specialist.'},
+            {'specialization_id': 2, 'specialization_name': 'Dermatologist', 'description': 'Skin, hair, and nail specialist.'},
+            {'specialization_id': 3, 'specialization_name': 'Dentist', 'description': 'Teeth and jaw bone specialist.'},
+            {'specialization_id': 4, 'specialization_name': 'Gynecologist/Obstetrician', 'description': "Women's reproductive health and pregnancy specialist."},
+            {'specialization_id': 5, 'specialization_name': 'Orthopedist (Orthopedic Surgeon)', 'description': 'Bones, joints, muscles, and musculoskeletal system specialist.'},
+            {'specialization_id': 6, 'specialization_name': 'Neurologist', 'description': 'Brain, spine, nerves, and nervous system specialist.'},
+            {'specialization_id': 7, 'specialization_name': 'Pediatrician', 'description': "Infants, children, and adolescents' physician."},
+            {'specialization_id': 8, 'specialization_name': 'Endocrinologist', 'description': 'Hormone imbalances, diabetes, and thyroid disease specialist.'},
+            {'specialization_id': 9, 'specialization_name': 'Hematologist', 'description': 'Blood and bone marrow specialist.'},
+            {'specialization_id': 10, 'specialization_name': 'Gastroenterologist', 'description': 'Digestive system and stomach specialist.'},
+            {'specialization_id': 11, 'specialization_name': 'Oncologist', 'description': 'Cancer diagnosis and treatment specialist.'},
+            {'specialization_id': 12, 'specialization_name': 'Nephrologist', 'description': 'Kidney care and kidney disease specialist.'},
+            {'specialization_id': 13, 'specialization_name': 'Ophthalmologist', 'description': 'Eye and vision specialist.'},
+            {'specialization_id': 14, 'specialization_name': 'Psychiatrist', 'description': 'Mental health and emotional disorders specialist.'},
+            {'specialization_id': 15, 'specialization_name': 'Anesthesiologist', 'description': 'Pain management and anesthesia specialist during surgery.'},
+        ]
+
     req_role = request.args.get('role', 'patient').strip().lower()
 
     if request.method == 'POST':
@@ -280,14 +300,17 @@ def register():
         dob = ""
         gender = "Other"
 
-        if role == 'doctor':
-            # Indian mobile number format validation (+91)
+        # Validate Indian mobile number (+91) for both patients and doctors
+        if phone_input:
             is_valid_phone, norm_p, phone_err = validate_and_normalize_indian_phone(phone_input)
             if not is_valid_phone:
                 errors.append(phone_err)
             else:
                 normalized_phone = norm_p
+        elif role == 'doctor':
+            errors.append("Mobile phone number is required.")
 
+        if role == 'doctor':
             specialization_id = request.form.get('specialization_id', type=int)
             qualification = request.form.get('qualification', '').strip()
             experience = request.form.get('experience', type=int) or 0
@@ -303,7 +326,6 @@ def register():
             gender = request.form.get('gender', 'Other')
             if gender not in ['Male', 'Female', 'Other']:
                 gender = 'Other'
-            normalized_phone = phone_input or None
 
         if errors:
             for err in errors:
@@ -1336,13 +1358,16 @@ def profile():
             flash("Full name cannot be blank.", "danger")
             return redirect(url_for('profile'))
 
-        normalized_phone = phone_input or None
-        if user_role == 'doctor':
+        normalized_phone = None
+        if phone_input:
             is_valid_phone, norm_p, phone_err = validate_and_normalize_indian_phone(phone_input)
             if not is_valid_phone:
                 flash(phone_err, "danger")
                 return redirect(url_for('profile'))
             normalized_phone = norm_p
+        elif user_role == 'doctor':
+            flash("Phone number is required for doctor profile.", "danger")
+            return redirect(url_for('profile'))
 
         if new_password:
             if len(new_password) < 6:

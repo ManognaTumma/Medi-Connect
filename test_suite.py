@@ -293,5 +293,69 @@ class SystemVerificationTests(unittest.TestCase):
         db.query_db("DELETE FROM users WHERE user_id = %s", (u['user_id'],), commit=True)
         print("\n[PASS] Public doctor registration, profile update, and dashboard display verified.")
 
+    def test_08_patient_registration_with_indian_phone_and_specialization_options(self):
+        """8. Test patient registration with Indian phone format, invalid phone rejection, and doctor specialization options."""
+        # Check registration page renders specialization options
+        reg_page = self.client.get('/register')
+        self.assertEqual(reg_page.status_code, 200)
+        html = reg_page.data.decode('utf-8')
+        self.assertIn('+91', html)
+        self.assertIn('Cardiologist', html)
+        self.assertIn('Dermatologist', html)
+        self.assertIn('Dentist', html)
+        self.assertIn('Gynecologist', html)
+        self.assertIn('Orthopedist', html)
+        self.assertIn('Neurologist', html)
+        self.assertIn('Pediatrician', html)
+        self.assertIn('Endocrinologist', html)
+        self.assertIn('Hematologist', html)
+
+        # Test valid patient registration with Indian phone
+        email = "test_patient_indian_phone@clinic.test"
+        db.query_db("DELETE FROM users WHERE email = %s", (email,), commit=True)
+
+        self.client.get('/logout')
+        resp = self.client.post('/register', data={
+            'csrf_token': 'test_token',
+            'role': 'patient',
+            'full_name': 'Test Indian Patient',
+            'email': email,
+            'phone': '9876500112',
+            'date_of_birth': '1995-05-15',
+            'gender': 'Female',
+            'password': 'Patient@123',
+            'confirm_password': 'Patient@123'
+        }, follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        u = db.query_db("SELECT * FROM users WHERE email = %s", (email,), one=True)
+        self.assertIsNotNone(u, "Patient account was not created")
+        self.assertEqual(u['phone'], '+91 9876500112', f"Patient phone not normalized: {u['phone']}")
+        self.assertEqual(u['role'], 'patient')
+
+        # Test patient profile update with Indian phone
+        with self.client.session_transaction() as sess:
+            sess['user_id'] = u['user_id']
+            sess['user_role'] = 'patient'
+            sess['csrf_token'] = 'test_token'
+
+        p_resp = self.client.post('/profile', data={
+            'csrf_token': 'test_token',
+            'full_name': 'Test Indian Patient Updated',
+            'phone': '+91 9888877777',
+            'date_of_birth': '1995-05-15',
+            'gender': 'Female',
+            'new_password': '',
+            'confirm_password': ''
+        }, follow_redirects=True)
+        self.assertEqual(p_resp.status_code, 200)
+
+        u_updated = db.query_db("SELECT * FROM users WHERE user_id = %s", (u['user_id'],), one=True)
+        self.assertEqual(u_updated['phone'], '+91 9888877777')
+
+        # Clean up
+        db.query_db("DELETE FROM users WHERE user_id = %s", (u['user_id'],), commit=True)
+        print("\n[PASS] Patient registration with Indian phone format and specialization options verified.")
+
 if __name__ == '__main__':
     unittest.main()

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initMobileMenu();
   initAlertAutoDismiss();
   initIndianPhoneInputs();
+  initRegistrationRoleSwitcher();
   initEditDoctorModal();
   initFormValidations();
   initQuickFillButtons();
@@ -90,14 +91,14 @@ function initFormValidations() {
         isValid = false;
       }
 
-      if (isDoctor) {
-        // Validate Indian mobile phone (+91)
-        const phoneRes = validateIndianPhone(phone ? phone.value : '');
-        if (!phoneRes.valid) {
-          showFieldError(phone, phoneRes.message);
-          isValid = false;
-        }
+      // Validate Indian mobile phone (+91) for both patient and doctor
+      const phoneRes = validateIndianPhone(phone ? phone.value : '');
+      if (!phoneRes.valid) {
+        showFieldError(phone, phoneRes.message);
+        isValid = false;
+      }
 
+      if (isDoctor) {
         const specSelect = regForm.querySelector('#specialization_id');
         if (!specSelect || !specSelect.value) {
           showFieldError(specSelect, 'Please select your medical specialization.');
@@ -110,12 +111,6 @@ function initFormValidations() {
           isValid = false;
         }
       } else {
-        // Patient phone
-        if (phone && phone.value.trim() && !validatePhone(phone.value.trim())) {
-          showFieldError(phone, 'Please enter a valid phone number format.');
-          isValid = false;
-        }
-
         const dob = regForm.querySelector('#date_of_birth');
         if (dob && dob.value) {
           const birthDate = new Date(dob.value);
@@ -508,6 +503,90 @@ function initEditDoctorModal() {
       if (bioInput) bioInput.value = this.getAttribute('data-doc-bio') || '';
     });
   });
+}
+
+function initRegistrationRoleSwitcher() {
+  const regForm = document.getElementById('registrationForm');
+  if (!regForm) return;
+
+  const btnPatient = document.getElementById('btnRolePatient');
+  const btnDoctor = document.getElementById('btnRoleDoctor');
+  const roleInput = document.getElementById('roleInput');
+  const doctorFields = document.getElementById('doctorFields');
+  const patientFields = document.getElementById('patientFields');
+  const pageTitle = document.querySelector('.form-title');
+  const pageSubtitle = document.querySelector('.form-subtitle');
+  const submitBtn = document.getElementById('registerSubmitBtn');
+  const nameInput = document.getElementById('full_name');
+  const emailInput = document.getElementById('email');
+  const specSelect = document.getElementById('specialization_id');
+  const qualInput = document.getElementById('qualification');
+
+  function setRole(role) {
+    if (role === 'doctor') {
+      if (roleInput) roleInput.value = 'doctor';
+      if (btnDoctor) {
+        btnDoctor.classList.add('btn-primary');
+        btnDoctor.classList.remove('btn-outline');
+      }
+      if (btnPatient) {
+        btnPatient.classList.remove('btn-primary');
+        btnPatient.classList.add('btn-outline');
+      }
+      if (doctorFields) doctorFields.style.display = 'block';
+      if (patientFields) patientFields.style.display = 'none';
+      if (pageTitle) pageTitle.textContent = 'Join as a Medical Physician';
+      if (pageSubtitle) pageSubtitle.textContent = 'Register your clinical credentials to consult patients on MediConnect';
+      if (submitBtn) submitBtn.textContent = 'Register as Physician';
+      if (nameInput) nameInput.placeholder = 'e.g. Dr. Jane Smith';
+      if (emailInput) emailInput.placeholder = 'doctor@carepoint.com';
+      if (specSelect) specSelect.setAttribute('required', 'required');
+      if (qualInput) qualInput.setAttribute('required', 'required');
+    } else {
+      if (roleInput) roleInput.value = 'patient';
+      if (btnPatient) {
+        btnPatient.classList.add('btn-primary');
+        btnPatient.classList.remove('btn-outline');
+      }
+      if (btnDoctor) {
+        btnDoctor.classList.remove('btn-primary');
+        btnDoctor.classList.add('btn-outline');
+      }
+      if (doctorFields) doctorFields.style.display = 'none';
+      if (patientFields) patientFields.style.display = 'block';
+      if (pageTitle) pageTitle.textContent = 'Create Patient Account';
+      if (pageSubtitle) pageSubtitle.textContent = 'Register to book and manage medical appointments online';
+      if (submitBtn) submitBtn.textContent = 'Complete Registration';
+      if (nameInput) nameInput.placeholder = 'e.g. Johnathan Doe';
+      if (emailInput) emailInput.placeholder = 'patient@example.com';
+      if (specSelect) specSelect.removeAttribute('required');
+      if (qualInput) qualInput.removeAttribute('required');
+    }
+  }
+
+  if (btnPatient) {
+    btnPatient.addEventListener('click', function (e) {
+      e.preventDefault();
+      setRole('patient');
+      if (window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + '?role=patient');
+      }
+    });
+  }
+
+  if (btnDoctor) {
+    btnDoctor.addEventListener('click', function (e) {
+      e.preventDefault();
+      setRole('doctor');
+      if (window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + '?role=doctor');
+      }
+    });
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialRole = urlParams.get('role') || (roleInput ? roleInput.value : 'patient');
+  setRole(initialRole);
 }
 
 /* =======================================================

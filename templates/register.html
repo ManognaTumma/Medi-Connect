@@ -23,15 +23,17 @@
       </p>
 
       <!-- Role Switcher -->
-      <div style="display: flex; justify-content: center; margin-top: 1.25rem; gap: 0.5rem;">
+      <div style="display: flex; justify-content: center; margin-top: 1.25rem; gap: 0.5rem;" id="regRoleSwitcher">
         <a href="{{ url_for('register', role='patient') }}" 
+           id="btnRolePatient"
            class="btn btn-sm {{ 'btn-primary' if role != 'doctor' else 'btn-outline' }}" 
-           style="border-radius: var(--radius-full); padding: 0.4rem 1.25rem;">
+           style="border-radius: var(--radius-full); padding: 0.4rem 1.25rem; text-decoration: none;">
           👤 Patient Registration
         </a>
         <a href="{{ url_for('register', role='doctor') }}" 
+           id="btnRoleDoctor"
            class="btn btn-sm {{ 'btn-primary' if role == 'doctor' else 'btn-outline' }}" 
-           style="border-radius: var(--radius-full); padding: 0.4rem 1.25rem;">
+           style="border-radius: var(--radius-full); padding: 0.4rem 1.25rem; text-decoration: none;">
           🩺 Doctor Registration
         </a>
       </div>
@@ -54,48 +56,70 @@
         </div>
 
         <div class="form-group">
-          <label for="phone" class="form-label">Mobile Phone Number {% if role == 'doctor' %}<span class="required">*</span>{% endif %}</label>
-          {% if role == 'doctor' %}
-            <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
-              <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
-                +91
-              </span>
-              <input type="tel" 
-                     class="form-control indian-phone-field" 
-                     id="phone" 
-                     name="phone" 
-                     value="{{ phone or '' }}" 
-                     placeholder="9876543210" 
-                     maxlength="15" 
-                     style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;" 
-                     required>
-            </div>
-            <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
-              Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+          <label for="phone" class="form-label">Mobile Phone Number <span class="required">*</span></label>
+          <div class="phone-input-group" style="display:flex;align-items:stretch;border:1.5px solid var(--slate-300);border-radius:var(--radius-md);overflow:hidden;background:#fff;">
+            <span class="phone-prefix" style="display:flex;align-items:center;padding:0.6rem 0.85rem;background:var(--slate-100);color:var(--slate-700);font-weight:700;font-size:0.95rem;border-right:1px solid var(--slate-300);user-select:none;white-space:nowrap;">
+              +91
             </span>
-          {% else %}
-            <input type="tel" class="form-control" id="phone" name="phone" value="{{ phone or '' }}" placeholder="+1 (555) 000-0000">
-          {% endif %}
+            <input type="tel" 
+                   class="form-control indian-phone-field" 
+                   id="phone" 
+                   name="phone" 
+                   value="{{ phone.replace('+91 ', '').replace('+91', '') if phone else '' }}" 
+                   placeholder="9876543210" 
+                   maxlength="15" 
+                   style="border:none;border-radius:0;box-shadow:none;flex:1;padding:0.6rem 0.85rem;" 
+                   required>
+          </div>
+          <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
+            Format: <strong>+91 9876543210</strong> (10-digit Indian mobile number)
+          </span>
+          <div class="phone-error-msg" style="color:var(--danger);font-size:0.8rem;margin-top:0.25rem;display:none;"></div>
         </div>
       </div>
 
-      {% if role == 'doctor' %}
-        <!-- Doctor Professional Fields -->
+      <!-- Doctor Professional Fields -->
+      {% if role != 'doctor' %}
+      <div id="doctorFields" style="display: none;">
+      {% else %}
+      <div id="doctorFields">
+      {% endif %}
         <div class="form-group">
           <label for="specialization_id" class="form-label">Medical Specialization <span class="required">*</span></label>
-          <select class="form-control" id="specialization_id" name="specialization_id" required>
-            <option value="">-- Choose Your Clinical Specialty (15 Specializations) --</option>
-            {% for spec in specializations %}
-              <option value="{{ spec.specialization_id }}" {% if specialization_id|string == spec.specialization_id|string %}selected{% endif %}>
-                {{ spec.specialization_name }} — {{ spec.description }}
-              </option>
-            {% endfor %}
+          <select class="form-control" id="specialization_id" name="specialization_id" {% if role == 'doctor' %}required{% endif %}>
+            <option value="">-- Choose Your Clinical Specialty (Select Specialization) --</option>
+            {% if specializations %}
+              {% for spec in specializations %}
+                <option value="{{ spec.specialization_id }}" {% if specialization_id|string == spec.specialization_id|string %}selected{% endif %}>
+                  {{ spec.specialization_name }} — {{ spec.description }}
+                </option>
+              {% endfor %}
+            {% else %}
+              <option value="1">Cardiologist — Heart and blood vessel specialist.</option>
+              <option value="2">Dermatologist — Skin, hair, and nail specialist.</option>
+              <option value="3">Dentist — Teeth and jaw bone specialist.</option>
+              <option value="4">Gynecologist/Obstetrician — Women's reproductive health and pregnancy specialist.</option>
+              <option value="5">Orthopedist (Orthopedic Surgeon) — Bones, joints, muscles, and musculoskeletal system specialist.</option>
+              <option value="6">Neurologist — Brain, spine, nerves, and nervous system specialist.</option>
+              <option value="7">Pediatrician — Infants, children, and adolescents' physician.</option>
+              <option value="8">Endocrinologist — Hormone imbalances, diabetes, and thyroid disease specialist.</option>
+              <option value="9">Hematologist — Blood and bone marrow specialist.</option>
+              <option value="10">Gastroenterologist — Digestive system and stomach specialist.</option>
+              <option value="11">Oncologist — Cancer diagnosis and treatment specialist.</option>
+              <option value="12">Nephrologist — Kidney care and kidney disease specialist.</option>
+              <option value="13">Ophthalmologist — Eye and vision specialist.</option>
+              <option value="14">Psychiatrist — Mental health and emotional disorders specialist.</option>
+              <option value="15">Anesthesiologist — Pain management and anesthesia specialist during surgery.</option>
+            {% endif %}
           </select>
+          <span class="form-helper" style="display:block;margin-top:0.35rem;font-size:0.8rem;color:var(--slate-500);">
+            Select from available specialties: Cardiologist, Dermatologist, Dentist, Gynecologist, Orthopedist, Neurologist, Pediatrician, Endocrinologist, Hematologist, and more.
+          </span>
         </div>
 
         <div class="form-group">
           <label for="qualification" class="form-label">Medical Qualifications <span class="required">*</span></label>
-          <input type="text" class="form-control" id="qualification" name="qualification" value="{{ qualification or '' }}" placeholder="e.g. MBBS, MD, DM, FACC" required>
+          <input type="text" class="form-control" id="qualification" name="qualification" value="{{ qualification or '' }}" placeholder="e.g. MBBS, MD, DM, FACC" {% if role == 'doctor' %}required{% endif %}>
         </div>
 
         <div class="form-row">
@@ -114,8 +138,14 @@
           <label for="biography" class="form-label">Professional Biography & Focus</label>
           <textarea class="form-control" id="biography" name="biography" rows="3" placeholder="Describe your clinical training, areas of interest, and patient care philosophy...">{{ biography or '' }}</textarea>
         </div>
+      </div>
+
+      <!-- Patient Specific Fields -->
+      {% if role == 'doctor' %}
+      <div id="patientFields" style="display: none;">
       {% else %}
-        <!-- Patient Specific Fields -->
+      <div id="patientFields">
+      {% endif %}
         <div class="form-row">
           <div class="form-group">
             <label for="date_of_birth" class="form-label">Date of Birth</label>
@@ -131,7 +161,7 @@
             </select>
           </div>
         </div>
-      {% endif %}
+      </div>
 
       <div class="form-row">
         <div class="form-group">
