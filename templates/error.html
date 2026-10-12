@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error_code }} - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="text-align: center; padding: 4rem 1.5rem;">
+  <div class="empty-state" style="padding: 3.5rem 2rem; background: var(--white); box-shadow: var(--shadow-md);">
+    <div style="font-size: 4rem; font-weight: 800; color: var(--primary); font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1;">
+      {{ error_code or 500 }}
+    </div>
+    <h1 style="font-size: 1.75rem; margin: 1rem 0 0.75rem; color: var(--dark);">
+      {% if error_code == 404 %}
+        Page Not Found
+      {% elif error_code == 403 %}
+        Access Forbidden
+      {% else %}
+        System Error Occurred
+      {% endif %}
+    </h1>
+    <p style="color: var(--slate-600); font-size: 1rem; max-width: 480px; margin: 0 auto 2rem; line-height: 1.6;">
+      {{ message or "An unexpected issue occurred while processing your request. Please return to the homepage or check back later." }}
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">Return to Home</a>
+      <a href="{{ url_for('contact') }}" class="btn btn-outline btn-lg">Contact Support</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Our Medical Doctors - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Page Header -->
+  <div class="section-header" style="margin-bottom: 2.5rem;">
+    <span class="section-subtitle">Board-Certified Specialists</span>
+    <h1 class="section-title">Meet Our Medical Physicians</h1>
+    <p class="section-description">
+      Search by doctor name or filter by clinical specialty to find the right healthcare specialist for your care.
+    </p>
+  </div>
+
+  <!-- Search and Specialty Filter Bar -->
+  <div style="background: var(--white); padding: 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--slate-200); box-shadow: var(--shadow-sm); margin-bottom: 2.5rem;">
+    <form method="GET" action="{{ url_for('doctors') }}" style="display: grid; grid-template-columns: 1fr auto auto; gap: 1rem; align-items: center;">
+      <div>
+        <label for="doctorLiveSearch" class="form-label" style="font-size: 0.8rem; text-transform: uppercase; color: var(--slate-500); margin-bottom: 0.25rem;">Live Search</label>
+        <input type="text" class="form-control" id="doctorLiveSearch" name="q" value="{{ search_query }}" placeholder="Search by physician name or qualification...">
+      </div>
+
+      <div style="min-width: 220px;">
+        <label for="specializationSelect" class="form-label" style="font-size: 0.8rem; text-transform: uppercase; color: var(--slate-500); margin-bottom: 0.25rem;">Filter Specialty</label>
+        <select class="form-control" id="specializationSelect" name="specialization" onchange="this.form.submit()">
+          <option value="">All Specialties</option>
+          {% for spec in specializations %}
+            <option value="{{ spec.specialization_id }}" {% if selected_spec|string == spec.specialization_id|string %}selected{% endif %}>
+              {{ spec.specialization_name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="align-self: flex-end;">
+        {% if search_query or selected_spec %}
+          <a href="{{ url_for('doctors') }}" class="btn btn-outline" style="height: 44px;">Reset Filter</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Doctors Cards Grid -->
+  {% if doctors %}
+    <div class="cards-grid" id="doctorsGrid">
+      {% for doc in doctors %}
+        <div class="card doctor-card doctor-card-item"
+             data-name="{{ doc.full_name|lower }}"
+             data-spec="{{ doc.specialization_name|lower }}"
+             data-qual="{{ doc.qualification|lower }}">
+          
+          <div class="doc-card-badge">Available</div>
+
+          <div>
+            <div class="doc-header">
+              <div class="doc-avatar">
+                {{ doc.full_name.split()[-1][0] if doc.full_name else 'D' }}
+              </div>
+              <div>
+                <h3 class="doc-name">{{ doc.full_name }}</h3>
+                <div class="doc-specialty">{{ doc.specialization_name }}</div>
+              </div>
+            </div>
+
+            <p class="doc-details">
+              {{ doc.biography or 'Dedicated healthcare specialist providing personalized diagnostic assessments, wellness screenings, and clinical care.' }}
+            </p>
+
+            <div class="doc-meta-row">
+              <span class="doc-meta-label">Qualification</span>
+              <span class="doc-meta-val">{{ doc.qualification }}</span>
+            </div>
+
+            <div class="doc-meta-row">
+              <span class="doc-meta-label">Clinical Experience</span>
+              <span class="doc-meta-val">{{ doc.experience }} years</span>
+            </div>
+
+            <div class="doc-meta-row">
+              <span class="doc-meta-label">Consultation Fee</span>
+              <span class="doc-fee">${{ "%.2f"|format(doc.consultation_fee) }}</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <a href="{{ url_for('book_appointment', doctor_id=doc.doctor_id) }}" class="btn btn-primary btn-full" id="bookDoc{{ doc.doctor_id }}">
+              Book Consultation
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <h3 class="empty-state-title">No Medical Doctors Found</h3>
+      <p class="empty-state-text">
+        We couldn't find any doctors matching your search criteria. Try selecting another specialty or clearing the search query.
+      </p>
+      <a href="{{ url_for('doctors') }}" class="btn btn-primary">Clear Filters</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

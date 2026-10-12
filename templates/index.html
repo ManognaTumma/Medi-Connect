@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}MediConnect - Modern Healthcare & Doctor Appointment Management{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-text-content">
+        <div class="hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+          </svg>
+          Trusted Clinical Healthcare
+        </div>
+        <h1 class="hero-title">
+          Skip the Waiting Room.<br>
+          Book <span>Top Doctors</span> Online.
+        </h1>
+        <p class="hero-lead">
+          Connect with certified specialists, check real-time availability slots, and confirm your consultation in seconds. Healthcare simplified for your entire family.
+        </p>
+        <div class="hero-actions">
+          <a href="{{ url_for('book_appointment') }}" class="btn btn-lg btn-primary" id="heroBookCta">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Book an Appointment
+          </a>
+          <a href="{{ url_for('doctors') }}" class="btn btn-lg btn-outline" id="heroExploreDocs">
+            Browse Doctors
+          </a>
+        </div>
+
+        <div class="hero-trust-badges">
+          <div class="trust-item">
+            <span class="trust-icon">✓</span> Verified Specialists
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span> Zero Booking Fees
+          </div>
+          <div class="trust-item">
+            <span class="trust-icon">✓</span> Instant Confirmation
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Visual Showcase -->
+      <div class="hero-visual-card">
+        <div class="hero-card-header">
+          <div>
+            <h3 style="font-size:1.15rem;margin-bottom:0.2rem;">Live Clinical Dashboard</h3>
+            <span style="font-size:0.8rem;color:var(--slate-500);">Real-time availability synced with MySQL</span>
+          </div>
+          <span class="badge badge-confirmed">
+            <span class="badge-dot"></span> System Live
+          </span>
+        </div>
+
+        <div class="hero-quick-stats">
+          <div class="stat-pill">
+            <div class="stat-number">{{ stats.doctors }}</div>
+            <div class="stat-label">Active Doctors</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-number">{{ stats.specialties }}</div>
+            <div class="stat-label">Specialties</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-number">{{ stats.patients }}</div>
+            <div class="stat-label">Registered Patients</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-number">{{ stats.appointments }}</div>
+            <div class="stat-label">Appointments Booked</div>
+          </div>
+        </div>
+
+        <div class="hero-featured-item">
+          <div class="hero-doc-avatar">Dr</div>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.95rem;color:var(--slate-800);">Quick Booking Notice</div>
+            <div style="font-size:0.825rem;color:var(--slate-600);">Same-day and next-day consultation slots are available across all clinical departments.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Medical Specialties Grid -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-subtitle">Clinical Specialties</span>
+      <h2 class="section-title">Comprehensive Medical Care</h2>
+      <p class="section-description">
+        Explore specialized departments staffed with highly experienced medical practitioners dedicated to exceptional diagnostic and therapeutic treatment.
+      </p>
+    </div>
+
+    <div class="cards-grid">
+      {% if specializations %}
+        {% for spec in specializations %}
+          <div class="card">
+            <div class="specialty-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                {% if 'Cardio' in spec.specialization_name %}
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                {% elif 'Neuro' in spec.specialization_name %}
+                  <circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path>
+                {% elif 'Pedia' in spec.specialization_name %}
+                  <circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path>
+                {% elif 'Derma' in spec.specialization_name %}
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></polygon>
+                {% elif 'Ortho' in spec.specialization_name %}
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                {% else %}
+                  <activity><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></activity>
+                {% endif %}
+              </svg>
+            </div>
+            <h3 style="font-size:1.25rem;margin-bottom:0.5rem;">{{ spec.specialization_name }}</h3>
+            <p style="color:var(--slate-500);font-size:0.9rem;margin-bottom:1.5rem;flex:1;">
+              {{ spec.description or "Premier diagnosis and treatment by senior department consultants." }}
+            </p>
+            <a href="{{ url_for('doctors', specialization=spec.specialization_id) }}" class="btn btn-sm btn-outline-primary" style="align-self:flex-start;">
+              View Specialists &rarr;
+            </a>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="text-align:center;grid-column:1/-1;color:var(--slate-500);">No specializations configured yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Featured Doctors Section -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-subtitle">Experienced Professionals</span>
+      <h2 class="section-title">Meet Our Leading Physicians</h2>
+      <p class="section-description">
+        Our medical staff includes board-certified physicians, clinical researchers, and healthcare leaders across multiple disciplines.
+      </p>
+    </div>
+
+    <div class="cards-grid">
+      {% if featured_doctors %}
+        {% for doc in featured_doctors %}
+          <div class="card doctor-card">
+            <div>
+              <div class="doc-header">
+                <div class="doc-avatar">{{ doc.full_name[4:5] if 'Dr.' in doc.full_name else doc.full_name[0] }}</div>
+                <div>
+                  <h3 class="doc-name">{{ doc.full_name }}</h3>
+                  <div class="doc-specialty">{{ doc.specialization_name }}</div>
+                </div>
+              </div>
+
+              <div class="doc-details">
+                <p style="font-size:0.875rem;margin-bottom:0.75rem;line-height:1.5;">
+                  {{ doc.qualification }}
+                </p>
+                {% if doc.biography %}
+                  <p style="font-size:0.825rem;color:var(--slate-500);margin-bottom:1rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                    {{ doc.biography }}
+                  </p>
+                {% endif %}
+              </div>
+            </div>
+
+            <div>
+              <div class="doc-meta-row">
+                <span class="doc-meta-label">Experience</span>
+                <span class="doc-meta-val">{{ doc.experience }} Years</span>
+              </div>
+              <div class="doc-meta-row">
+                <span class="doc-meta-label">Consultation Fee</span>
+                <span class="doc-fee">${{ "%.2f"|format(doc.consultation_fee) }}</span>
+              </div>
+              <div style="margin-top:1.25rem;">
+                <a href="{{ url_for('book_appointment', doctor_id=doc.doctor_id) }}" class="btn btn-primary btn-full">
+                  Book Consultation
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="text-align:center;grid-column:1/-1;color:var(--slate-500);">No doctor profiles found.</p>
+      {% endif %}
+    </div>
+
+    <div style="text-align:center;margin-top:2.5rem;">
+      <a href="{{ url_for('doctors') }}" class="btn btn-outline" style="padding:0.75rem 2rem;">
+        View All Doctors &rarr;
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- System Benefits / Workflow -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-subtitle">Why Choose MediConnect</span>
+      <h2 class="section-title">A Smarter Healthcare Journey</h2>
+      <p class="section-description">
+        Designed from the ground up for patients, medical practitioners, and clinical administrators.
+      </p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="specialty-icon-box" style="background:var(--accent-emerald-light);color:var(--accent-emerald);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h3 style="font-size:1.2rem;margin-bottom:0.5rem;">Real-time Slot Verification</h3>
+        <p style="color:var(--slate-500);font-size:0.9rem;">
+          Our dynamic scheduling engine verifies available time slots against MySQL directly, preventing double-bookings.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="specialty-icon-box" style="background:#fef3c7;color:#d97706;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <h3 style="font-size:1.2rem;margin-bottom:0.5rem;">Secure Medical Records</h3>
+        <p style="color:var(--slate-500);font-size:0.9rem;">
+          Role-based access security ensures patients, doctors, and admins have protected, private access to their respective portal features.
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="specialty-icon-box" style="background:#e0e7ff;color:#4f46e5;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <h3 style="font-size:1.2rem;margin-bottom:0.5rem;">Transparent Status Updates</h3>
+        <p style="color:var(--slate-500);font-size:0.9rem;">
+          Track your appointment state instantly with live Pending, Confirmed, Completed, and Cancelled status badges.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section style="background:linear-gradient(135deg, var(--primary), var(--secondary));color:var(--white);padding:4rem 0;">
+  <div class="container" style="text-align:center;">
+    <h2 style="color:var(--white);font-size:2.5rem;margin-bottom:1rem;">Ready to Prioritize Your Health?</h2>
+    <p style="font-size:1.15rem;opacity:0.9;max-width:600px;margin:0 auto 2rem;">
+      Register a free patient account today or log in to schedule your next medical consultation in under two minutes.
+    </p>
+    <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;">
+      <a href="{{ url_for('register') }}" class="btn btn-lg" style="background:var(--white);color:var(--primary);font-weight:700;">
+        Create Patient Account
+      </a>
+      <a href="{{ url_for('doctors') }}" class="btn btn-lg" style="background:transparent;border:2px solid var(--white);color:var(--white);">
+        Find a Specialist
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

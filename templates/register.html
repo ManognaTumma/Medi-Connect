@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Registration - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="form-card">
+    <div class="form-header">
+      <div class="brand-icon" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+      <h1 class="form-title">Create Patient Account</h1>
+      <p class="form-subtitle">Register to book and manage medical appointments online</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('register') }}" id="registrationForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="form-group">
+        <label for="full_name" class="form-label">Full Legal Name <span class="required">*</span></label>
+        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ full_name or '' }}" placeholder="e.g. Johnathan Doe" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address <span class="required">*</span></label>
+          <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" placeholder="patient@example.com" required>
+          <span class="form-helper">Used for booking confirmations and logins.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="phone" class="form-label">Phone Number</label>
+          <input type="tel" class="form-control" id="phone" name="phone" value="{{ phone or '' }}" placeholder="+1 (555) 000-0000">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date_of_birth" class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ dob or '' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="gender" class="form-label">Gender</label>
+          <select class="form-control" id="gender" name="gender">
+            <option value="Male" {% if gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if gender == 'Other' or not gender %}selected{% endif %}>Other / Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="password" class="form-label">Password <span class="required">*</span></label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="At least 6 characters" required>
+          <span class="form-helper">Minimum 6 characters.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password" class="form-label">Confirm Password <span class="required">*</span></label>
+          <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Re-type password" required>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="registerSubmitBtn">
+          Complete Registration
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-top: 1.75rem; font-size: 0.925rem; color: var(--slate-600);">
+        Already have an account? <a href="{{ url_for('login') }}" style="font-weight: 600;">Log in here</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

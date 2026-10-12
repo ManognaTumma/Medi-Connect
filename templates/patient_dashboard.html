@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Dashboard Top Header -->
+  <div class="dashboard-header">
+    <div class="dashboard-title-group">
+      <h1>Patient Dashboard</h1>
+      <p class="dashboard-subtitle">Welcome back, {{ user.full_name or current_user.name }}! Manage your consultations and medical records.</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+      <a href="{{ url_for('book_appointment') }}" class="btn btn-primary" id="dashBookBtn">
+        + Book New Appointment
+      </a>
+      <a href="{{ url_for('profile') }}" class="btn btn-outline" id="dashProfileBtn">
+        Edit Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Metrics -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Upcoming Appointments</h3>
+        <div class="kpi-number">{{ upcoming_appointments|length }}</div>
+      </div>
+      <div class="kpi-icon warning">📅</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Historical Records</h3>
+        <div class="kpi-number">{{ past_appointments|length }}</div>
+      </div>
+      <div class="kpi-icon info">📋</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Registered Email</h3>
+        <div style="font-weight:700;font-size:1.1rem;color:var(--slate-800);word-break:break-all;">
+          {{ user.email }}
+        </div>
+      </div>
+      <div class="kpi-icon">👤</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Contact Phone</h3>
+        <div style="font-weight:700;font-size:1.1rem;color:var(--slate-800);">
+          {{ user.phone or 'Not provided' }}
+        </div>
+      </div>
+      <div class="kpi-icon success">📞</div>
+    </div>
+  </div>
+
+  <!-- Tabbed Appointments Management -->
+  <div class="tab-container">
+    <div class="tab-nav">
+      <button type="button" class="tab-btn active" data-target="#upcomingPane" id="tabUpcomingBtn">
+        Upcoming Consultations ({{ upcoming_appointments|length }})
+      </button>
+      <button type="button" class="tab-btn" data-target="#pastPane" id="tabPastBtn">
+        Past & Completed History ({{ past_appointments|length }})
+      </button>
+    </div>
+
+    <!-- Upcoming Appointments Pane -->
+    <div class="tab-pane active" id="upcomingPane">
+      {% if upcoming_appointments %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Doctor</th>
+                <th>Specialty</th>
+                <th>Date & Time</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for apt in upcoming_appointments %}
+                <tr>
+                  <td><strong>#{{ apt.appointment_id }}</strong></td>
+                  <td>
+                    <div style="font-weight:600;color:var(--dark);">{{ apt.doctor_name }}</div>
+                    <div style="font-size:0.8rem;color:var(--slate-500);">{{ apt.qualification }}</div>
+                  </td>
+                  <td><span class="role-tag doctor">{{ apt.specialization_name }}</span></td>
+                  <td>
+                    <div style="font-weight:600;">{{ apt.appointment_date }}</div>
+                    <div style="font-size:0.85rem;color:var(--slate-600);">{{ apt.appointment_time }}</div>
+                  </td>
+                  <td style="max-width:220px;">
+                    <div style="font-size:0.875rem;white-space:normal;">{{ apt.reason }}</div>
+                  </td>
+                  <td>
+                    {% if apt.status == 'Pending' %}
+                      <span class="badge badge-pending"><span class="badge-dot"></span> Pending</span>
+                    {% elif apt.status == 'Confirmed' %}
+                      <span class="badge badge-confirmed"><span class="badge-dot"></span> Confirmed</span>
+                    {% else %}
+                      <span class="badge">{{ apt.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align: right;">
+                    {% if apt.status in ('Pending', 'Confirmed') %}
+                      <form method="POST" action="{{ url_for('cancel_appointment', appointment_id=apt.appointment_id) }}" onsubmit="return confirm('Are you sure you want to cancel this appointment?');" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="btn btn-sm btn-danger" id="cancelBtn{{ apt.appointment_id }}">
+                          Cancel
+                        </button>
+                      </form>
+                    {% else %}
+                      <span style="color:var(--slate-400);font-size:0.85rem;">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">📅</div>
+          <h3 class="empty-state-title">No Upcoming Appointments</h3>
+          <p class="empty-state-text">You do not have any pending or confirmed upcoming appointments scheduled.</p>
+          <a href="{{ url_for('book_appointment') }}" class="btn btn-primary">Book Consultation Now</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Past Consultations Pane -->
+    <div class="tab-pane" id="pastPane">
+      {% if past_appointments %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Doctor</th>
+                <th>Specialty</th>
+                <th>Date & Time</th>
+                <th>Reason</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for apt in past_appointments %}
+                <tr>
+                  <td><strong>#{{ apt.appointment_id }}</strong></td>
+                  <td>
+                    <div style="font-weight:600;color:var(--dark);">{{ apt.doctor_name }}</div>
+                  </td>
+                  <td><span class="role-tag doctor">{{ apt.specialization_name }}</span></td>
+                  <td>
+                    <div>{{ apt.appointment_date }}</div>
+                    <div style="font-size:0.825rem;color:var(--slate-500);">{{ apt.appointment_time }}</div>
+                  </td>
+                  <td style="max-width:240px;">
+                    <div style="font-size:0.875rem;white-space:normal;">{{ apt.reason }}</div>
+                  </td>
+                  <td>
+                    {% if apt.status == 'Completed' %}
+                      <span class="badge badge-completed"><span class="badge-dot"></span> Completed</span>
+                    {% elif apt.status == 'Cancelled' %}
+                      <span class="badge badge-cancelled"><span class="badge-dot"></span> Cancelled</span>
+                    {% elif apt.status == 'Rejected' %}
+                      <span class="badge badge-rejected"><span class="badge-dot"></span> Rejected</span>
+                    {% else %}
+                      <span class="badge">{{ apt.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <h3 class="empty-state-title">No Historical Records</h3>
+          <p class="empty-state-text">Past completed and cancelled appointments will appear here.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

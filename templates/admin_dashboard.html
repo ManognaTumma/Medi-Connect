@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Console - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Top Header -->
+  <div class="dashboard-header">
+    <div class="dashboard-title-group">
+      <h1>Administrator Console</h1>
+      <p class="dashboard-subtitle">Complete clinical operations, physician management, appointments, and inquiries.</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+      <button type="button" class="btn btn-primary" data-modal-target="#addDoctorModal" id="adminAddDocBtn">
+        + Register New Doctor
+      </button>
+      <button type="button" class="btn btn-outline-primary" data-modal-target="#addSpecializationModal" id="adminAddSpecBtn">
+        + Add Specialization
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Metrics -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Total Doctors</h3>
+        <div class="kpi-number">{{ stats.total_doctors }}</div>
+      </div>
+      <div class="kpi-icon">🩺</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Registered Patients</h3>
+        <div class="kpi-number">{{ stats.total_patients }}</div>
+      </div>
+      <div class="kpi-icon success">👥</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Total Bookings</h3>
+        <div class="kpi-number">{{ stats.total_appointments }}</div>
+      </div>
+      <div class="kpi-icon info">📅</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Pending Review</h3>
+        <div class="kpi-number" style="color:var(--status-pending);">{{ stats.pending_appointments }}</div>
+      </div>
+      <div class="kpi-icon warning">⏳</div>
+    </div>
+  </div>
+
+  <!-- Tabbed Sections -->
+  <div class="tab-container">
+    <div class="tab-nav">
+      <button type="button" class="tab-btn active" data-target="#tabAppointments" id="navTabApts">
+        Appointments ({{ appointments|length }})
+      </button>
+      <button type="button" class="tab-btn" data-target="#tabDoctors" id="navTabDocs">
+        Medical Doctors ({{ doctors|length }})
+      </button>
+      <button type="button" class="tab-btn" data-target="#tabPatients" id="navTabPatients">
+        Patients ({{ patients|length }})
+      </button>
+      <button type="button" class="tab-btn" data-target="#tabSpecialties" id="navTabSpecs">
+        Specialties ({{ specializations|length }})
+      </button>
+      <button type="button" class="tab-btn" data-target="#tabMessages" id="navTabMsgs">
+        Inquiries ({{ contact_messages|length }})
+      </button>
+    </div>
+
+    <!-- 1. Appointments Tab -->
+    <div class="tab-pane active" id="tabAppointments">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Date & Time</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th style="text-align: right;">Admin Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for apt in appointments %}
+              <tr>
+                <td><strong>#{{ apt.appointment_id }}</strong></td>
+                <td>
+                  <div style="font-weight:600;color:var(--dark);">{{ apt.patient_name }}</div>
+                </td>
+                <td>
+                  <div style="font-weight:600;">{{ apt.doctor_name }}</div>
+                  <div style="font-size:0.8rem;color:var(--slate-500);">{{ apt.specialization_name }}</div>
+                </td>
+                <td>
+                  <div>{{ apt.appointment_date }}</div>
+                  <div style="font-size:0.825rem;color:var(--slate-500);">{{ apt.appointment_time }}</div>
+                </td>
+                <td style="max-width:200px;">
+                  <div style="font-size:0.85rem;white-space:normal;">{{ apt.reason }}</div>
+                </td>
+                <td>
+                  {% if apt.status == 'Pending' %}
+                    <span class="badge badge-pending"><span class="badge-dot"></span> Pending</span>
+                  {% elif apt.status == 'Confirmed' %}
+                    <span class="badge badge-confirmed"><span class="badge-dot"></span> Confirmed</span>
+                  {% elif apt.status == 'Completed' %}
+                    <span class="badge badge-completed"><span class="badge-dot"></span> Completed</span>
+                  {% elif apt.status == 'Cancelled' %}
+                    <span class="badge badge-cancelled"><span class="badge-dot"></span> Cancelled</span>
+                  {% elif apt.status == 'Rejected' %}
+                    <span class="badge badge-rejected"><span class="badge-dot"></span> Rejected</span>
+                  {% else %}
+                    <span class="badge">{{ apt.status }}</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: right;">
+                  <form method="POST" action="{{ url_for('admin_update_appointment_status', appointment_id=apt.appointment_id) }}" style="display:inline-flex;gap:0.35rem;align-items:center;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <select name="status" class="form-control" style="padding:0.3rem 0.5rem;font-size:0.825rem;width:auto;height:32px;">
+                      <option value="Confirmed" {% if apt.status == 'Confirmed' %}selected{% endif %}>Confirm</option>
+                      <option value="Pending" {% if apt.status == 'Pending' %}selected{% endif %}>Pending</option>
+                      <option value="Completed" {% if apt.status == 'Completed' %}selected{% endif %}>Completed</option>
+                      <option value="Cancelled" {% if apt.status == 'Cancelled' %}selected{% endif %}>Cancel</option>
+                      <option value="Rejected" {% if apt.status == 'Rejected' %}selected{% endif %}>Reject</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-primary" style="height:32px;">Update</button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" style="text-align:center;padding:2rem;">No appointments found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2. Doctors Tab -->
+    <div class="tab-pane" id="tabDoctors">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Doctor Name</th>
+              <th>Specialty</th>
+              <th>Qualification</th>
+              <th>Fee</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doc in doctors %}
+              <tr>
+                <td>
+                  <div style="font-weight:600;color:var(--dark);">{{ doc.full_name }}</div>
+                  <div style="font-size:0.8rem;color:var(--slate-500);">{{ doc.email }} &bull; {{ doc.phone or 'No phone' }}</div>
+                </td>
+                <td><span class="role-tag doctor">{{ doc.specialization_name }}</span></td>
+                <td>{{ doc.qualification }} ({{ doc.experience }}y exp)</td>
+                <td><strong>${{ "%.2f"|format(doc.consultation_fee) }}</strong></td>
+                <td>
+                  {% if doc.is_active %}
+                    <span class="badge badge-completed"><span class="badge-dot"></span> Active</span>
+                  {% else %}
+                    <span class="badge badge-cancelled"><span class="badge-dot"></span> Inactive</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <!-- Toggle Active Status -->
+                  <form method="POST" action="{{ url_for('admin_toggle_doctor', doctor_id=doc.doctor_id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-sm btn-outline" style="height:30px;padding:0.2rem 0.5rem;" title="Toggle Active">
+                      {{ 'Deactivate' if doc.is_active else 'Activate' }}
+                    </button>
+                  </form>
+
+                  <!-- Delete Doctor -->
+                  <form method="POST" action="{{ url_for('admin_delete_doctor', doctor_id=doc.doctor_id) }}" onsubmit="return confirm('Permanently remove or deactivate this doctor?');" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-sm btn-danger" style="height:30px;padding:0.2rem 0.5rem;">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">No doctors registered.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 3. Patients Tab -->
+    <div class="tab-pane" id="tabPatients">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Gender & DOB</th>
+              <th>Total Bookings</th>
+              <th>Joined Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pat in patients %}
+              <tr>
+                <td><strong>#{{ pat.user_id }}</strong></td>
+                <td><strong style="color:var(--dark);">{{ pat.full_name }}</strong></td>
+                <td>{{ pat.email }}</td>
+                <td>{{ pat.phone or '—' }}</td>
+                <td>{{ pat.gender or '—' }} &bull; {{ pat.date_of_birth or '—' }}</td>
+                <td><span class="badge badge-confirmed">{{ pat.total_bookings }} visits</span></td>
+                <td>{{ pat.created_at }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" style="text-align:center;padding:2rem;">No patients registered.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4. Specializations Tab -->
+    <div class="tab-pane" id="tabSpecialties">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Specialization Name</th>
+              <th>Description</th>
+              <th>Assigned Doctors</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for spec in specializations %}
+              <tr>
+                <td><strong>#{{ spec.specialization_id }}</strong></td>
+                <td><strong style="color:var(--dark);">{{ spec.specialization_name }}</strong></td>
+                <td style="max-width:300px;font-size:0.875rem;">{{ spec.description or '—' }}</td>
+                <td><span class="badge badge-confirmed">{{ spec.doctor_count }} doctors</span></td>
+                <td style="text-align: right;">
+                  <form method="POST" action="{{ url_for('admin_delete_specialization', spec_id=spec.specialization_id) }}" onsubmit="return confirm('Delete this specialization?');" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-sm btn-danger" {% if spec.doctor_count > 0 %}title="Cannot delete while doctors are assigned" disabled style="opacity:0.5;"{% endif %}>
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" style="text-align:center;padding:2rem;">No specializations found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. Contact Inquiries Tab -->
+    <div class="tab-pane" id="tabMessages">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Sender</th>
+              <th>Subject</th>
+              <th>Message</th>
+              <th>Received At</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for msg in contact_messages %}
+              <tr>
+                <td><strong>#{{ msg.message_id }}</strong></td>
+                <td>
+                  <div style="font-weight:600;color:var(--dark);">{{ msg.name }}</div>
+                  <div style="font-size:0.8rem;color:var(--slate-500);">{{ msg.email }}</div>
+                </td>
+                <td><strong>{{ msg.subject }}</strong></td>
+                <td style="max-width:320px;font-size:0.875rem;white-space:normal;">{{ msg.message }}</td>
+                <td style="font-size:0.825rem;color:var(--slate-500);">{{ msg.created_at }}</td>
+                <td style="text-align: right;">
+                  <form method="POST" action="{{ url_for('admin_delete_message', message_id=msg.message_id) }}" onsubmit="return confirm('Delete this inquiry message?');" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">No inquiry messages received.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Register Doctor -->
+<div class="modal-backdrop" id="addDoctorModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Register New Doctor</h3>
+      <button type="button" class="modal-close-btn">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('admin_add_doctor') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="full_name" placeholder="Dr. John Doe" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email Address <span class="required">*</span></label>
+            <input type="email" class="form-control" name="email" placeholder="doc@carepoint.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="text" class="form-control" name="phone" placeholder="+1 (555) 000-0000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Clinical Specialty <span class="required">*</span></label>
+          <select class="form-control" name="specialization_id" required>
+            {% for spec in specializations %}
+              <option value="{{ spec.specialization_id }}">{{ spec.specialization_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Qualifications <span class="required">*</span></label>
+          <input type="text" class="form-control" name="qualification" placeholder="MD, FACC, Harvard Medical" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Experience (Years)</label>
+            <input type="number" class="form-control" name="experience" value="5" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consultation Fee ($)</label>
+            <input type="number" step="0.01" class="form-control" name="consultation_fee" value="75.00" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Biography & Specialization Notes</label>
+          <textarea class="form-control" name="biography" rows="3" placeholder="Physician background and practice focus..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Account Password</label>
+          <input type="password" class="form-control" name="password" value="Doctor@123">
+          <span class="form-helper">Default: Doctor@123 (Doctor can change this on profile).</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Doctor Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Add Specialization -->
+<div class="modal-backdrop" id="addSpecializationModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Medical Specialization</h3>
+      <button type="button" class="modal-close-btn">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('admin_add_specialization') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Specialization Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="specialization_name" placeholder="e.g. Oncology, Ophthalmology" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" name="description" rows="3" placeholder="Brief clinical scope of this medical specialty..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Specialization</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

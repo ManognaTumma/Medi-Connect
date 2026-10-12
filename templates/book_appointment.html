@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Book Doctor Appointment - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="form-card">
+    <div class="form-header">
+      <div class="brand-icon" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+        </svg>
+      </div>
+      <h1 class="form-title">Schedule Consultation</h1>
+      <p class="form-subtitle">Choose your specialist physician and select an available time slot</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('book_appointment') }}" id="appointmentBookingForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="appointment_time" id="appointment_time" value="">
+
+      <!-- Doctor Selection -->
+      <div class="form-group">
+        <label for="doctor_id" class="form-label">Select Physician <span class="required">*</span></label>
+        <select class="form-control" id="doctor_id" name="doctor_id" required>
+          <option value="">-- Choose a Doctor --</option>
+          {% for doc in doctors %}
+            <option value="{{ doc.doctor_id }}"
+                    {% if selected_doctor_id == doc.doctor_id %}selected{% endif %}>
+              {{ doc.full_name }} — {{ doc.specialization_name }} (${{ "%.2f"|format(doc.consultation_fee) }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Date Selection -->
+      <div class="form-group">
+        <label for="appointment_date" class="form-label">Appointment Date <span class="required">*</span></label>
+        <input type="date" class="form-control" id="appointment_date" name="appointment_date" min="{{ today_date }}" required>
+        <span class="form-helper">Consultation appointments can be scheduled for today and upcoming dates.</span>
+      </div>
+
+      <!-- Real-Time Time Slot Selector -->
+      <div class="form-group">
+        <label class="form-label">Available Time Slots <span class="required">*</span></label>
+        <div class="slot-container" id="slotContainer">
+          <div class="slots-grid" id="slotsGrid">
+            <div class="slot-empty-msg">
+              Select both a doctor and a date to view available appointment slots.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consultation Reason -->
+      <div class="form-group">
+        <label for="reason" class="form-label">Reason for Consultation <span class="required">*</span></label>
+        <textarea class="form-control" id="reason" name="reason" rows="3" placeholder="Briefly describe your symptoms, health concern, or checkup request..." required></textarea>
+        <span class="form-helper">At least 5 characters. This helps the physician prepare for your visit.</span>
+      </div>
+
+      <div style="margin-top: 2rem;">
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="confirmBookingBtn">
+          Confirm & Book Appointment
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--slate-500);">
+        Need to review your existing appointments? <a href="{{ url_for('patient_dashboard') }}" style="font-weight: 600;">Go to My Dashboard</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

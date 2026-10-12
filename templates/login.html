@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="form-card">
+    <div class="form-header">
+      <div class="brand-icon" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+        </svg>
+      </div>
+      <h1 class="form-title">Account Sign In</h1>
+      <p class="form-subtitle">Log in as Patient, Doctor, or System Administrator</p>
+    </div>
+
+    <!-- Quick Credentials Helper for Evaluation / Demo -->
+    <div class="quick-fill-box">
+      <div class="quick-fill-title">⚡ Quick Login Fill (Demo Accounts)</div>
+      <div class="quick-fill-chips">
+        <button type="button" class="chip-btn quick-fill-chip" data-email="admin@carepoint.com" data-password="Admin@123">
+          🔑 Admin
+        </button>
+        <button type="button" class="chip-btn quick-fill-chip" data-email="sarah.jenkins@carepoint.com" data-password="Doctor@123">
+          🩺 Doctor (Cardiology)
+        </button>
+        <button type="button" class="chip-btn quick-fill-chip" data-email="patient@carepoint.com" data-password="Patient@123">
+          👤 Patient (John)
+        </button>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('login', next=request.args.get('next')) }}" id="loginForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address <span class="required">*</span></label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}" placeholder="name@domain.com" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+          <label for="password" class="form-label" style="margin-bottom:0;">Password <span class="required">*</span></label>
+        </div>
+        <input type="password" class="form-control" id="password" name="password" placeholder="Enter your account password" required>
+      </div>
+
+      <div style="margin-top: 1.75rem;">
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="loginSubmitBtn">
+          Sign In to Portal
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-top: 1.75rem; font-size: 0.925rem; color: var(--slate-600);">
+        Don't have an account yet? <a href="{{ url_for('register') }}" style="font-weight: 600;">Register as Patient</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+

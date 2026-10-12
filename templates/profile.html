@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+  <div class="form-card">
+    <div class="form-header">
+      <div class="brand-icon" style="margin: 0 auto 1rem; width: 44px; height: 44px;">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+      <h1 class="form-title">Account Profile</h1>
+      <p class="form-subtitle">Update your personal details and account security password</p>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--slate-100);padding:1rem 1.25rem;border-radius:var(--radius-md);margin-bottom:1.75rem;">
+      <div>
+        <div style="font-size:0.8rem;text-transform:uppercase;color:var(--slate-500);font-weight:700;">Account Role</div>
+        <div style="font-weight:700;font-size:1.05rem;color:var(--slate-800);text-transform:capitalize;">{{ user.role or current_user.role }}</div>
+      </div>
+      <div>
+        <span class="role-tag {{ user.role or current_user.role }}">{{ user.role or current_user.role }}</span>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('profile') }}" id="profileForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="form-group">
+        <label for="full_name" class="form-label">Full Name <span class="required">*</span></label>
+        <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name or '' }}" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input type="email" class="form-control" id="email" value="{{ user.email or '' }}" disabled style="background-color: var(--slate-100); cursor: not-allowed;">
+          <span class="form-helper">Email cannot be changed directly as it is your account identifier.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="phone" class="form-label">Phone Number</label>
+          <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}" placeholder="+1 (555) 000-0000">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="date_of_birth" class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ user.date_of_birth or '' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="gender" class="form-label">Gender</label>
+          <select class="form-control" id="gender" name="gender">
+            <option value="Male" {% if user.gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if user.gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if user.gender == 'Other' %}selected{% endif %}>Other / Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin: 2rem 0 1.25rem; border-top: 1px solid var(--slate-200); padding-top: 1.5rem;">
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem;">Change Password (Optional)</h3>
+        <p style="color: var(--slate-500); font-size: 0.875rem; margin-bottom: 1.25rem;">
+          Leave blank if you wish to keep your existing password.
+        </p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new_password" class="form-label">New Password</label>
+            <input type="password" class="form-control" id="new_password" name="new_password" placeholder="At least 6 characters">
+          </div>
+
+          <div class="form-group">
+            <label for="confirm_password" class="form-label">Confirm New Password</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Re-type new password">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.75rem;">
+        <button type="submit" class="btn btn-primary btn-lg btn-full" id="profileSubmitBtn">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MediConnect - Premier Healthcare & Doctor Appointment Management System. Book appointments with top specialists seamlessly online.">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}MediConnect - Doctor Appointment Management System{% endblock %}</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Site Navigation Header -->
+  <header class="site-header">
+    <div class="navbar-container">
+      <a href="{{ url_for('index') }}" class="brand-logo" id="nav-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/>
+          </svg>
+        </div>
+        <span>MediConnect</span>
+      </a>
+
+      <button class="nav-toggle-btn" aria-label="Toggle navigation" aria-expanded="false" id="mobileNavToggle">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" id="nav-home">Home</a></li>
+        <li><a href="{{ url_for('doctors') }}" class="nav-link {% if request.endpoint == 'doctors' %}active{% endif %}" id="nav-doctors">Find Doctors</a></li>
+        <li><a href="{{ url_for('about') }}" class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" id="nav-about">About Us</a></li>
+        <li><a href="{{ url_for('contact') }}" class="nav-link {% if request.endpoint == 'contact' %}active{% endif %}" id="nav-contact">Contact</a></li>
+        
+        {% if current_user %}
+          {% if current_user.role == 'patient' %}
+            <li><a href="{{ url_for('patient_dashboard') }}" class="nav-link {% if request.endpoint == 'patient_dashboard' %}active{% endif %}" id="nav-patient-dash">My Dashboard</a></li>
+            <li><a href="{{ url_for('book_appointment') }}" class="btn btn-sm btn-primary" id="nav-book-btn">Book Appointment</a></li>
+          {% elif current_user.role == 'doctor' %}
+            <li><a href="{{ url_for('doctor_dashboard') }}" class="nav-link {% if request.endpoint == 'doctor_dashboard' %}active{% endif %}" id="nav-doctor-dash">Doctor Portal</a></li>
+          {% elif current_user.role == 'admin' %}
+            <li><a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" id="nav-admin-dash">Admin Console</a></li>
+          {% endif %}
+        {% endif %}
+      </ul>
+
+      <div class="nav-actions">
+        {% if current_user %}
+          <div class="user-menu-pill">
+            <div class="user-avatar-initial">{{ current_user.name[0] | upper }}</div>
+            <a href="{{ url_for('profile') }}" style="color:inherit; font-weight:600;" title="Edit Profile">{{ current_user.name }}</a>
+            <span class="role-tag {{ current_user.role }}">{{ current_user.role }}</span>
+          </div>
+          <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline" id="nav-logout-btn" title="Sign out">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-outline" id="nav-login-btn">Sign In</a>
+          <a href="{{ url_for('register') }}" class="btn btn-primary" id="nav-register-btn">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Messages Notifications -->
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" role="alert">
+            <div class="alert-content">
+              {% if category == 'success' %}
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              {% elif category == 'danger' %}
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+              {% else %}
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+            <button type="button" class="alert-close" aria-label="Close message">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Dynamic Content Block -->
+  <main class="main-wrapper">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;">
+            <div class="brand-icon" style="width:32px;height:32px;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/>
+              </svg>
+            </div>
+            <h3 style="margin-bottom:0;">MediConnect</h3>
+          </div>
+          <p>
+            An advanced digital clinical ecosystem bridging patient wellness and top medical specialists with seamless real-time appointment scheduling.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Quick Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('index') }}">Home Overview</a></li>
+            <li><a href="{{ url_for('doctors') }}">Our Medical Doctors</a></li>
+            <li><a href="{{ url_for('book_appointment') }}">Book Consultation</a></li>
+            <li><a href="{{ url_for('about') }}">About Hospital</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Portals</h4>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('login') }}">Patient Login</a></li>
+            <li><a href="{{ url_for('register') }}">Patient Registration</a></li>
+            <li><a href="{{ url_for('login') }}">Doctor Access</a></li>
+            <li><a href="{{ url_for('login') }}">Administrator Portal</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Clinical Support</h4>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('contact') }}">Contact & Helpdesk</a></li>
+            <li><span style="color:var(--slate-400);font-size:0.9rem;">Emergency: (555) 911-0000</span></li>
+            <li><span style="color:var(--slate-400);font-size:0.9rem;">Email: care@carepoint.com</span></li>
+            <li><span style="color:var(--slate-400);font-size:0.9rem;">Mon – Sat: 8:00 AM – 8:00 PM</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; {{ current_year }} MediConnect Healthcare Management System. All rights reserved.</p>
+        <p>Built with Python Flask, MySQL, HTML5, CSS3 & JavaScript.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core JavaScript -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

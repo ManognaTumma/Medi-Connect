@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Portal - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Top Header -->
+  <div class="dashboard-header">
+    <div class="dashboard-title-group">
+      <h1>Physician Portal</h1>
+      <p class="dashboard-subtitle">
+        Dr. {{ doctor.full_name or current_user.name }} &bull; {{ doctor.specialization_name or 'Specialist' }} &bull; ${{ "%.2f"|format(doctor.consultation_fee or 50) }} fee
+      </p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+      <button type="button" class="btn btn-primary" data-modal-target="#addAvailabilityModal" id="openAddAvailabilityBtn">
+        + Add Schedule Slot
+      </button>
+      <a href="{{ url_for('profile') }}" class="btn btn-outline">
+        Edit Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Total Bookings</h3>
+        <div class="kpi-number">{{ stats.total }}</div>
+      </div>
+      <div class="kpi-icon info">📋</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Pending Review</h3>
+        <div class="kpi-number" style="color:var(--status-pending);">{{ stats.pending }}</div>
+      </div>
+      <div class="kpi-icon warning">⏳</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Confirmed</h3>
+        <div class="kpi-number" style="color:var(--primary);">{{ stats.confirmed }}</div>
+      </div>
+      <div class="kpi-icon">📅</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-content">
+        <h3>Completed</h3>
+        <div class="kpi-number" style="color:var(--accent-emerald);">{{ stats.completed }}</div>
+      </div>
+      <div class="kpi-icon success">✓</div>
+    </div>
+  </div>
+
+  <!-- Tabbed Sections: Appointments & Availability -->
+  <div class="tab-container">
+    <div class="tab-nav">
+      <button type="button" class="tab-btn active" data-target="#appointmentsPane" id="tabAptsBtn">
+        Patient Appointments ({{ appointments|length }})
+      </button>
+      <button type="button" class="tab-btn" data-target="#availabilityPane" id="tabAvailBtn">
+        Schedule & Availability Windows ({{ availabilities|length }})
+      </button>
+    </div>
+
+    <!-- Appointments Tab -->
+    <div class="tab-pane active" id="appointmentsPane">
+      {% if appointments %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Patient Details</th>
+                <th>Date & Slot</th>
+                <th>Reason</th>
+                <th>Current Status</th>
+                <th style="text-align: right;">Update Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for apt in appointments %}
+                <tr>
+                  <td><strong>#{{ apt.appointment_id }}</strong></td>
+                  <td>
+                    <div style="font-weight:600;color:var(--dark);">{{ apt.patient_name }}</div>
+                    <div style="font-size:0.8rem;color:var(--slate-500);">
+                      {{ apt.patient_email }} &bull; {{ apt.patient_phone or 'No phone' }}
+                    </div>
+                  </td>
+                  <td>
+                    <div style="font-weight:600;">{{ apt.appointment_date }}</div>
+                    <div style="font-size:0.85rem;color:var(--slate-600);">{{ apt.appointment_time }}</div>
+                  </td>
+                  <td style="max-width:240px;">
+                    <div style="font-size:0.875rem;white-space:normal;">{{ apt.reason }}</div>
+                  </td>
+                  <td>
+                    {% if apt.status == 'Pending' %}
+                      <span class="badge badge-pending"><span class="badge-dot"></span> Pending</span>
+                    {% elif apt.status == 'Confirmed' %}
+                      <span class="badge badge-confirmed"><span class="badge-dot"></span> Confirmed</span>
+                    {% elif apt.status == 'Completed' %}
+                      <span class="badge badge-completed"><span class="badge-dot"></span> Completed</span>
+                    {% elif apt.status == 'Cancelled' %}
+                      <span class="badge badge-cancelled"><span class="badge-dot"></span> Cancelled</span>
+                    {% elif apt.status == 'Rejected' %}
+                      <span class="badge badge-rejected"><span class="badge-dot"></span> Rejected</span>
+                    {% else %}
+                      <span class="badge">{{ apt.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align: right;">
+                    <form method="POST" action="{{ url_for('doctor_update_status', appointment_id=apt.appointment_id) }}" style="display:inline-flex;gap:0.4rem;align-items:center;">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <select name="status" class="form-control" style="padding:0.35rem 0.6rem;font-size:0.85rem;width:auto;height:34px;">
+                        <option value="Confirmed" {% if apt.status == 'Confirmed' %}selected{% endif %}>Confirm</option>
+                        <option value="Completed" {% if apt.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Rejected" {% if apt.status == 'Rejected' %}selected{% endif %}>Reject</option>
+                        <option value="Cancelled" {% if apt.status == 'Cancelled' %}selected{% endif %}>Cancel</option>
+                      </select>
+                      <button type="submit" class="btn btn-sm btn-outline-primary" style="height:34px;">
+                        Update
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <h3 class="empty-state-title">No Consultations Scheduled</h3>
+          <p class="empty-state-text">You do not have any patient consultation requests yet.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Availability Schedule Tab -->
+    <div class="tab-pane" id="availabilityPane">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+        <div>
+          <h3 style="font-size:1.15rem;margin-bottom:0.2rem;">Upcoming Availability Blocks</h3>
+          <p style="color:var(--slate-500);font-size:0.875rem;">Slots generated dynamically for patients to book online.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" data-modal-target="#addAvailabilityModal">
+          + Add New Block
+        </button>
+      </div>
+
+      {% if availabilities %}
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Slot Duration</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for av in availabilities %}
+                <tr>
+                  <td><strong>{{ av.available_date }}</strong></td>
+                  <td>{{ av.start_time }}</td>
+                  <td>{{ av.end_time }}</td>
+                  <td>{{ av.slot_duration }} mins</td>
+                  <td><span class="badge badge-completed"><span class="badge-dot"></span> Active</span></td>
+                  <td style="text-align: right;">
+                    <form method="POST" action="{{ url_for('doctor_delete_availability', availability_id=av.availability_id) }}" onsubmit="return confirm('Remove this availability block?');" style="display:inline;">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">⏰</div>
+          <h3 class="empty-state-title">No Availability Scheduled</h3>
+          <p class="empty-state-text">Add your consultation working hours so patients can find open booking slots.</p>
+          <button type="button" class="btn btn-primary" data-modal-target="#addAvailabilityModal">
+            Create Schedule Block
+          </button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Add Availability Modal -->
+<div class="modal-backdrop" id="addAvailabilityModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Add Availability Window</h3>
+      <button type="button" class="modal-close-btn">&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('doctor_add_availability') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="available_date" class="form-label">Consultation Date <span class="required">*</span></label>
+          <input type="date" class="form-control" id="available_date" name="available_date" min="{{ today_date }}" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="start_time" class="form-label">Start Time <span class="required">*</span></label>
+            <input type="time" class="form-control" id="start_time" name="start_time" required>
+          </div>
+          <div class="form-group">
+            <label for="end_time" class="form-label">End Time <span class="required">*</span></label>
+            <input type="time" class="form-control" id="end_time" name="end_time" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="slot_duration" class="form-label">Duration per Consultation Slot</label>
+          <select class="form-control" id="slot_duration" name="slot_duration">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes (Standard)</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Availability Block</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
